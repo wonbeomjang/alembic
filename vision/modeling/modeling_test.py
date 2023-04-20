@@ -2,7 +2,7 @@ from absl.testing import parameterized
 import torch
 
 from vision.configs import backbones
-from vision.configs import classification_model
+from vision.configs import classification
 from vision.modeling.backbones import get_model as get_backbone_model
 from vision.modeling import get_model
 
@@ -23,9 +23,10 @@ class Test(parameterized.TestCase):
 
     @parameterized.parameters(*resnet.support_model)
     def test_classification_model(self, backbone_id):
-        classification_cfg = classification_model.ClassificationModel()
+        classification_cfg = classification.ClassificationModel()
         classification_cfg.backbone.alembic_resnet.model_id = backbone_id
 
         model = get_model(classification_cfg)
+        result = model(torch.randn(1, 3, 256, 256))
 
-        model(torch.randn(1, 3, 256, 256))
+        self.assertEqual(result.shape, torch.Size([1, 1000]))

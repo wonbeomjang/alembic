@@ -7,3 +7,5 @@ torch==2.0.0
 torchaudio==2.0.1
 torchvision==0.15.1
 absl-py==1.4.0
+lightning~=2.0.1
+torchmetrics~=0.11.4

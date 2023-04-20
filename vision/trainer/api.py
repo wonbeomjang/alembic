@@ -1,15 +1,17 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from torch import nn
+from lightning import LightningModule
 
+from vision.configs.trainer import Trainer
+from vision.trainer._trainer import BasicTrainer
 
-M = TypeVar("M", bound=nn.Module)
+M = TypeVar("M", bound=LightningModule)
 
 BUILTIN_MODELS = {}
 
 
-def register_model(
+def register_trainer(
     name: Optional[str] = None,
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
@@ -22,7 +24,7 @@ def register_model(
     return wrapper
 
 
-def list_model(module: Optional[ModuleType] = None) -> List[str]:
+def list_trainer(module: Optional[ModuleType] = None) -> List[str]:
     """
     Returns a list with the names of registered models.
 
@@ -41,7 +43,7 @@ def list_model(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_model_builder(name: str) -> Callable[..., nn.Module]:
+def get_trainer_builder(name: str) -> Callable[..., BasicTrainer]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,16 +61,16 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_model(model_cfg, **config: Any) -> nn.Module:
+def get_trainer(trainer_cfg: Trainer, **config: Any) -> BasicTrainer:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        model_cfg (ModelConfig): config of the model
+        trainer_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_model_builder(model_cfg.model_id)
-    return fn(model_cfg, **config)
+    fn = get_trainer_builder(trainer_cfg.type)
+    return fn(trainer_cfg, **config)

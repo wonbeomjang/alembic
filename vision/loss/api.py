@@ -3,13 +3,15 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from torch import nn
 
+from vision.configs.loss import Loss
+
 
 M = TypeVar("M", bound=nn.Module)
 
 BUILTIN_MODELS = {}
 
 
-def register_model(
+def register_loss(
     name: Optional[str] = None,
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
@@ -22,7 +24,7 @@ def register_model(
     return wrapper
 
 
-def list_model(module: Optional[ModuleType] = None) -> List[str]:
+def list_loss(module: Optional[ModuleType] = None) -> List[str]:
     """
     Returns a list with the names of registered models.
 
@@ -41,7 +43,7 @@ def list_model(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_model_builder(name: str) -> Callable[..., nn.Module]:
+def get_loss_builder(name: str) -> Callable[..., nn.Module]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,16 +61,16 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_model(model_cfg, **config: Any) -> nn.Module:
+def get_loss(loss_cfg: Loss, **config: Any) -> nn.Module:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        model_cfg (ModelConfig): config of the model
+        loss_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_model_builder(model_cfg.model_id)
-    return fn(model_cfg, **config)
+    fn = get_loss_builder(loss_cfg.type)
+    return fn(loss_cfg, **config)

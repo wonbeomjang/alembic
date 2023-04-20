@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from torch import nn
 
-from vision.configs import classification_model as classification_cfg
+from vision.configs import classification as classification_cfg
 from vision.modeling.backbones import get_model
 from vision.modeling import register_model
 
