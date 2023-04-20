@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Literal, Optional
+from typing import Optional
+from typing_extensions import Literal
 
 from vision.configs.classification import ClassificationModel
 from vision.configs.loss import Loss
