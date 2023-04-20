@@ -17,4 +17,4 @@ class CrossEntropyLoss:
 @dataclasses.dataclass
 class Loss:
     type: Optional[str] = None
-    cross_entropy_loss = CrossEntropyLoss()
+    cross_entropy_loss: CrossEntropyLoss = CrossEntropyLoss()

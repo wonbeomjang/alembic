@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 
 from vision.configs import trainer as trainer_config
+from vision.dataloader import get_dataloader
 from vision.modeling import get_model
 from vision.loss import get_loss
 from vision.optimizer import get_optimizer
@@ -75,12 +76,25 @@ class ClassificationTrainer(BasicTrainer):
     ):
         self.model = model
         self.trainer = Trainer(max_epochs=config.epochs)
+        self.train_loader = get_dataloader(config.train_data)
 
-    def train(self, train_dataloader: DataLoader, val_dataloader: DataLoader):
-        self.trainer.fit(self.model, train_dataloader, val_dataloader)
+        if config.val_data is not None:
+            self.val_loader = get_dataloader(config.val_data)
+        else:
+            self.val_loader = None
+
+    def train(self):
+        self.trainer.fit(self.model, self.train_loader)
+
+    def train_and_eval(self):
+        assert self.val_loader is not None
+        self.trainer.fit(self.model, self.train_loader, self.val_loader)
 
     def test(self, test_dataloader: DataLoader):
         self.trainer.test(self.model, test_dataloader)
+
+    def predict(self, dataloader: DataLoader):
+        self.trainer.predict(self.model, dataloader)
 
 
 @register_trainer("classification")

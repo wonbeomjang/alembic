@@ -24,7 +24,7 @@ class Test(parameterized.TestCase):
     @parameterized.parameters(*resnet.support_model)
     def test_classification_model(self, backbone_id):
         classification_cfg = classification.ClassificationModel()
-        classification_cfg.backbone.alembic_resnet.model_id = backbone_id
+        classification_cfg.backbone.alembic_resnet.type = backbone_id
 
         model = get_model(classification_cfg)
         result = model(torch.randn(1, 3, 256, 256))

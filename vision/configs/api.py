@@ -1,15 +1,15 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from torch import nn
+from vision.configs.trainer import Trainer
 
 
-M = TypeVar("M", bound=nn.Module)
+M = TypeVar("M", bound=Trainer)
 
 BUILTIN_MODELS = {}
 
 
-def register_model(
+def register_experiment_config(
     name: Optional[str] = None,
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
@@ -22,7 +22,7 @@ def register_model(
     return wrapper
 
 
-def list_model(module: Optional[ModuleType] = None) -> List[str]:
+def list_config(module: Optional[ModuleType] = None) -> List[str]:
     """
     Returns a list with the names of registered models.
 
@@ -41,7 +41,7 @@ def list_model(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_model_builder(name: str) -> Callable[..., nn.Module]:
+def get_config_builder(name: str) -> Callable[..., Trainer]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,16 +59,16 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_model(model_cfg, **config: Any) -> nn.Module:
+def get_config(dataset_type: str, **config: Any) -> Trainer:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        model_cfg (ModelConfig): config of the model
+        dataset_type (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_model_builder(model_cfg.type)
-    return fn(model_cfg, **config)
+    fn = get_config_builder(dataset_type)
+    return fn(**config)

@@ -9,6 +9,6 @@ from vision.configs.base_config import ModelConfig
 class ClassificationModel(ModelConfig):
     """ResNet config."""
 
-    model_id: Optional[str] = "classification"
+    type: Optional[str] = "classification"
     num_classes: int = 1000
     backbone = backbones.Backbone(type="alembic_resnet")
