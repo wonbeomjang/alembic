@@ -3,4 +3,4 @@ from vision.lr_scheduler.api import (
     list_lr_scheduler,
     register_lr_scheduler,
 )
-from vision.lr_scheduler import warmup
+from vision.lr_scheduler import one_cycle_lr
