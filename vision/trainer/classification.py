@@ -1,14 +1,20 @@
-from typing import Any
+import time
+from typing import Any, Union, Tuple, List, Dict
 
 import lightning
 from lightning import Trainer
+from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim
+from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 
 from vision.configs import trainer as trainer_config
+from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
+from vision.lr_scheduler import get_lr_scheduler
 from vision.modeling import get_model
 from vision.loss import get_loss
 from vision.optimizer import get_optimizer
@@ -32,11 +38,24 @@ class Classification(lightning.LightningModule):
         preds = self(images)
         loss = self.criterion(preds, labels)
 
+        acc = FM.accuracy(
+            preds,
+            labels,
+            self.config.task,
+            num_classes=self.config.classification_model.num_classes,
+        )
+        metrics = {"train_acc": acc, "train_loss": loss}
+        self.log_dict(metrics)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
         images, labels = batch
+
+        cur_time = time.time_ns()
         preds = self(images)
+        inference_time = (time.time_ns() - cur_time) / 1_000_000
+
         loss = self.criterion(preds, labels)
 
         acc = FM.accuracy(
@@ -45,7 +64,11 @@ class Classification(lightning.LightningModule):
             self.config.task,
             num_classes=self.config.classification_model.num_classes,
         )
-        metrics = {"val_acc": acc, "val_loss": loss}
+        metrics = {
+            "val_acc": acc,
+            "val_loss": loss,
+            "inference_time_ms": inference_time,
+        }
 
         self.log_dict(metrics)
 
@@ -66,17 +89,53 @@ class Classification(lightning.LightningModule):
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         return self(batch)
 
-    def configure_optimizers(self) -> optim.Optimizer:
-        return get_optimizer(self.config.optimizer)(self.parameters())
+    def on_train_epoch_end(self) -> None:
+        super().on_train_epoch_end()
+        lr_scheduler = self.lr_schedulers()
+        if isinstance(lr_scheduler, optim.lr_scheduler.LRScheduler):
+            self.log_dict({"lr": lr_scheduler.get_last_lr()[0]})
+
+    def configure_optimizers(
+        self,
+    ) -> Union[
+        Tuple[List[Optimizer], List[Dict[str, Union[LRScheduler, str]]]], Optimizer
+    ]:
+        optimizer = get_optimizer(self.config.optimizer)(self.parameters())
+        if self.config.lr_scheduler is not None:
+            lr_scheduler = get_lr_scheduler(self.config.lr_scheduler)(
+                optimizer, self.config.optimizer.lr
+            )
+            return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]
+        return optimizer
 
 
 class ClassificationTrainer(BasicTrainer):
     def __init__(
         self, config: trainer_config.Trainer, model: lightning.LightningModule
     ):
+        self.config = config
+        logger = None
+        checkpoint_callback = []
+        if config.logger == "tensorboard":
+            logger = TensorBoardLogger(save_dir=config.log_dir)
+
+        if config.save_best_model:
+            checkpoint_callback += [
+                ModelCheckpoint(
+                    dirpath=config.log_dir, filename="best.pt", monitor="val_acc"
+                )
+            ]
+
         self.model = model
-        self.trainer = Trainer(max_epochs=config.epochs)
         self.train_loader = get_dataloader(config.train_data)
+        log_step = len(self.train_loader.dataset) // config.train_data.batch_size
+
+        self.trainer = Trainer(
+            max_epochs=config.epochs,
+            logger=logger,
+            callbacks=checkpoint_callback,
+            log_every_n_steps=log_step,
+        )
 
         if config.val_data is not None:
             self.val_loader = get_dataloader(config.val_data)
@@ -84,7 +143,7 @@ class ClassificationTrainer(BasicTrainer):
             self.val_loader = None
 
     def train(self):
-        self.trainer.fit(self.model, self.train_loader)
+        self.trainer.fit(self.model, self.train_loader, ckpt_path=self.config.ckpt)
 
     def train_and_eval(self):
         assert self.val_loader is not None

@@ -6,11 +6,11 @@ from typing import Dict, Tuple
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import cv2
 
 from vision.configs import dataset as dataset_config
 from vision.dataloader import register_dataloader
+from vision.dataloader.utils import parse_augmentation
 
 
 class ImageClassificationDataset(Dataset):
@@ -27,13 +27,7 @@ class ImageClassificationDataset(Dataset):
         }
         self.image_dir_path = config.image_dir
 
-        self.transforms: A.Compose = A.Compose(
-            [
-                A.PadIfNeeded(config.image_size[1], config.image_size[2]),
-                A.Resize(config.image_size[1], config.image_size[2]),
-                ToTensorV2(),
-            ]
-        )
+        self.transforms: A.Compose = parse_augmentation(aug_config=config.augmentation)
 
     def __getitem__(self, i) -> Tuple[Tensor, int]:
         image_id = self.labels[i]["image_id"]

@@ -14,8 +14,6 @@ class ClassificationModel(nn.Module):
     ):
         super().__init__()
         self.backbone = get_model(model_config.backbone)
-        self.avg_pool = nn.AdaptiveAvgPool2d((7, 7))
-        self.flatten = nn.Flatten()
 
         with torch.no_grad():
             dummy_input = torch.randn((1, 3, 256, 256))
@@ -23,13 +21,15 @@ class ClassificationModel(nn.Module):
             self.max_key = max(output.keys())
             _, channels, _, _ = output[self.max_key].shape
 
-        self.fc = nn.Linear(channels * 7 * 7, model_config.num_classes)
+        self.header = nn.Sequential(
+            nn.AdaptiveAvgPool2d((7, 7)),
+            nn.Flatten(),
+            nn.Linear(channels * 7 * 7, model_config.num_classes),
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.backbone(x)[self.max_key]
-        x = self.avg_pool(x)
-        x = self.flatten(x)
-        x = self.fc(x)
+        x = self.header(x)
 
         return x
 

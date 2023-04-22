@@ -11,7 +11,7 @@ def adam(optimizer_config: Optimizer):
     def _adam(param):
         return Adam(
             param,
-            lr=optimizer_config.adam.lr,
+            lr=optimizer_config.lr,
             betas=optimizer_config.adam.betas,
             eps=optimizer_config.adam.eps,
             weight_decay=optimizer_config.adam.weight_decay,
