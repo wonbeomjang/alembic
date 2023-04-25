@@ -29,12 +29,13 @@ def dog_vs_cat_classification_resnet():
     image_size: Tuple[int, int, int] = (3, 256, 256)
     batch_size: int = 32
     num_workers: int = 4
+    learning_rate: float = 1e-3
 
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTrainer(
             classification_model=ClassificationModel(num_classes=2),
-            optimizer=Optimizer(type="adam", adam=Adam(lr=1e-3)),
+            optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
                 type="cross_entropy_loss",
                 cross_entropy_loss=CrossEntropyLoss(label_smoothing=0.1),
@@ -51,12 +52,12 @@ def dog_vs_cat_classification_resnet():
             num_workers=num_workers,
             augmentation=Augmentation(
                 aug_list=[
-                    ("LongestMaxSize", {"max_size": image_size}),
+                    ("LongestMaxSize", {"max_size": max(image_size[1], image_size[2])}),
                     (
                         "PadIfNeeded",
                         {
-                            "min_height": image_size,
-                            "min_width": image_size,
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
                             "border_mode": cv2.BORDER_CONSTANT,
                         },
                     ),
@@ -80,12 +81,12 @@ def dog_vs_cat_classification_resnet():
             num_workers=num_workers,
             augmentation=Augmentation(
                 aug_list=[
-                    ("LongestMaxSize", {"max_size": image_size}),
+                    ("LongestMaxSize", {"max_size": max(image_size[1], image_size[2])}),
                     (
                         "PadIfNeeded",
                         {
-                            "min_height": image_size,
-                            "min_width": image_size,
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
                             "border_mode": cv2.BORDER_CONSTANT,
                         },
                     ),
@@ -112,17 +113,13 @@ def neurocle_cla_resnet():
         save_best_model=True,
         classification=ClassificationTrainer(
             classification_model=ClassificationModel(num_classes=2),
-            optimizer=Optimizer(
-                type="adam",
-                lr=learning_rate,
-                adam=Adam()
-            ),
+            optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             lr_scheduler=LRScheduler(
                 type="one_cycle_lr",
                 one_cycle_lr=OneCycleLR(
                     epochs=epochs,
                     steps_per_epoch=7,
-                )
+                ),
             ),
             loss=Loss(
                 type="cross_entropy_loss",

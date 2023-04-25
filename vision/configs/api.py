@@ -6,7 +6,7 @@ from vision.configs.trainer import Trainer
 
 M = TypeVar("M", bound=Trainer)
 
-BUILTIN_MODELS = {}
+BUILTIN_EXP_CONFIG = {}
 
 
 def register_experiment_config(
@@ -14,9 +14,9 @@ def register_experiment_config(
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
         key = name if name is not None else fn.__name__
-        if key in BUILTIN_MODELS:
+        if key in BUILTIN_EXP_CONFIG:
             raise ValueError(f"An entry is already registered under the name '{key}'.")
-        BUILTIN_MODELS[key] = fn
+        BUILTIN_EXP_CONFIG[key] = fn
         return fn
 
     return wrapper
@@ -35,7 +35,7 @@ def list_config(module: Optional[ModuleType] = None) -> List[str]:
     """
     models = [
         k
-        for k, v in BUILTIN_MODELS.items()
+        for k, v in BUILTIN_EXP_CONFIG.items()
         if module is None or v.__module__.rsplit(".", 1)[0] == module.__name__
     ]
     return sorted(models)
@@ -53,9 +53,9 @@ def get_config_builder(name: str) -> Callable[..., Trainer]:
     """
     name = name.lower()
     try:
-        fn = BUILTIN_MODELS[name]
+        fn = BUILTIN_EXP_CONFIG[name]
     except KeyError:
-        raise ValueError(f"Unknown model {name}")
+        raise ValueError(f"Unknown exp config {name}")
     return fn
 
 
