@@ -2,15 +2,20 @@ import time
 from typing import Any, Union, Tuple, List, Dict
 
 import lightning
+import numpy as np
+import torch
 from lightning import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning.pytorch.callbacks import ModelCheckpoint
-from torch import nn, optim
+from torch import nn, optim, Tensor
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
+from torchvision.transforms.functional import to_pil_image, to_tensor
 
+from utils.cam.methods import GradCAMpp, CAM
+from utils.cam.uitls import overlay_mask
 from vision.configs import trainer as trainer_config
 from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
@@ -22,7 +27,11 @@ from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
 
 
-class Classification(lightning.LightningModule):
+MEAN = torch.unsqueeze(torch.unsqueeze(torch.Tensor((0.485, 0.456, 0.406)), -1), -1)
+STD = torch.unsqueeze(torch.unsqueeze(torch.Tensor((0.229, 0.224, 0.225)), -1), -1)
+
+
+class ClassificationTask(lightning.LightningModule):
     def __init__(self, config: trainer_config.ClassificationTrainer):
         super().__init__()
         self.config = config
@@ -35,6 +44,11 @@ class Classification(lightning.LightningModule):
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
+
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            result = self.get_cam_image(image=images[0])
+            self.logger.add_image("CAM_train", result, self.global_step)
+
         preds = self(images)
         loss = self.criterion(preds, labels)
 
@@ -51,6 +65,10 @@ class Classification(lightning.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         images, labels = batch
+
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            result = self.get_cam_image(image=images[0])
+            self.logger.experiment.add_image("CAM_val", result, self.global_step)
 
         cur_time = time.time_ns()
         preds = self(images)
@@ -108,6 +126,18 @@ class Classification(lightning.LightningModule):
             return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]
         return optimizer
 
+    def get_cam_image(self, image: Tensor) -> Tensor:
+        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = np.transpose(numpy_image, [1, 2, 0])
+
+        with CAM(self, target_layer="model.header.0", fc_layer="model.header.2") as cam_extractor:
+            out = self(torch.unsqueeze(image, dim=0))
+            activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
+            result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0), mode='F'), alpha=0.5)
+            result = to_tensor(result)
+
+        return result
+
 
 class ClassificationTrainer(BasicTrainer):
     def __init__(
@@ -160,7 +190,7 @@ class ClassificationTrainer(BasicTrainer):
 def classification_trainer(config: trainer_config.Trainer):
     assert config.type == "classification"
 
-    model = Classification(config.classification)
+    model = ClassificationTask(config.classification)
     trainer = ClassificationTrainer(config, model)
 
     return trainer

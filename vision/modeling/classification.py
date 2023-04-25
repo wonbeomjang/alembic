@@ -22,9 +22,9 @@ class ClassificationModel(nn.Module):
             _, channels, _, _ = output[self.max_key].shape
 
         self.header = nn.Sequential(
-            nn.AdaptiveAvgPool2d((7, 7)),
+            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
-            nn.Linear(channels * 7 * 7, model_config.num_classes),
+            nn.Linear(channels, model_config.num_classes),
         )
 
     def forward(self, x: Tensor) -> Tensor:
