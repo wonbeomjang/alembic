@@ -1,3 +1,6 @@
+from types import TracebackType
+from typing import Type
+
 import numpy as np
 
 import torch
@@ -5,11 +8,11 @@ from torch import nn
 from torchvision.models.feature_extraction import create_feature_extractor
 
 
-class ReciproCam:
-    def __init__(self, model: torch.nn.Module):
-        device = next(model.parameters()).device
-        self.feature_net = create_feature_extractor(model, return_nodes={"layer4": "layer"}).eval()
-        self.head_net = nn.Sequential(model.avgpool, nn.Flatten(), model.fc.eval())
+class ReciproCAM:
+    def __init__(self, backbone: torch.nn.Module, head: torch.nn.Module):
+        device = next(backbone.parameters()).device
+        self.feature_net = backbone.eval()
+        self.head_net = head.eval()
         self.device = device
         self.feature = None
         self.softmax = torch.nn.Softmax(dim=1)
@@ -65,7 +68,8 @@ class ReciproCam:
         return cam
 
     def __call__(self, image, class_index=None):
-        feature_map = self.feature_net(image)['layer']
+        output = self.feature_net(image)
+        feature_map = output[max(output.keys())]
 
         prediction = self.head_net(feature_map)
 
@@ -89,4 +93,10 @@ class ReciproCam:
         # Normalization
         cam = (cam - cam.min()) / (cam.max() - cam.min())
 
-        return cam, class_index
+        return cam, prediction
+
+    def __enter__(self) -> "ReciproCAM":
+        return self
+
+    def __exit__(self, exct_type: Type[BaseException], exce_value: BaseException, traceback: TracebackType) -> None:
+        pass

@@ -4,7 +4,7 @@
 # See LICENSE or go to <https://www.apache.org/licenses/LICENSE-2.0> for full license details.
 
 from functools import partial
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, Dict
 
 import torch
 from torch import Tensor, nn
@@ -44,10 +44,14 @@ class _GradCAM(_CAM):
         if self._hooks_enabled:
             self.hook_g[idx] = grad.data
 
-    def _hook_g(self, module: nn.Module, input: Tuple[Tensor, ...], output: Tensor, idx: int = 0) -> None:
+    def _hook_g(self, module: nn.Module, input: Tuple[Tensor, ...], output: Union[Dict[str, Tensor], Tensor], idx: int = 0) -> None:
         """Gradient hook"""
         if self._hooks_enabled:
-            self.hook_handles.append(output.register_hook(partial(self._store_grad, idx=idx)))
+            if isinstance(output, dict):
+                self.hook_handles.append(output[max(output.keys())].register_hook(partial(self._store_grad, idx=idx)))
+            else:
+                self.hook_handles.append(output.register_hook(partial(self._store_grad, idx=idx)))
+
 
     def _backprop(self, scores: Tensor, class_idx: Union[int, List[int]], retain_graph: bool = False) -> None:
         """Backpropagate the loss for a specific output class"""

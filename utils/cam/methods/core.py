@@ -7,7 +7,7 @@ import logging
 from abc import abstractmethod
 from functools import partial
 from types import TracebackType
-from typing import Any, List, Optional, Tuple, Type, Union, cast
+from typing import Any, List, Optional, Tuple, Type, Union, cast, Dict
 
 import torch
 import torch.nn.functional as F
@@ -100,10 +100,13 @@ class _CAM:
 
         return target_name
 
-    def _hook_a(self, module: nn.Module, input: Tuple[Tensor, ...], output: Tensor, idx: int = 0) -> None:
+    def _hook_a(self, module: nn.Module, input: Tuple[Tensor, ...], output: Union[Tensor, Dict[str, Tensor]], idx: int = 0) -> None:
         """Activation hook."""
         if self._hooks_enabled:
-            self.hook_a[idx] = output.data
+            if isinstance(output, dict):
+                self.hook_a[idx] = output[max(output.keys())].data
+            else:
+                self.hook_a[idx] = output.data
 
     def reset_hooks(self) -> None:
         """Clear stored activation and gradients."""

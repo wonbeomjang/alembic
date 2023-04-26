@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 from torchvision.transforms.functional import to_pil_image, to_tensor
 
-from utils.cam.methods import GradCAMpp, CAM
+from utils.cam.methods import GradCAMpp, CAM, ReciproCAM
 from utils.cam.uitls import overlay_mask
 from vision.configs import trainer as trainer_config
 from vision.configs.optimizer import Optimizer
@@ -44,10 +44,11 @@ class ClassificationTask(lightning.LightningModule):
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
-
-        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-            result = self.get_cam_image(image=images[0])
-            self.logger.add_image("CAM_train", result, self.global_step)
+        #
+        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+        #     self.logger.experiment.add_image("Train_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
+        #     self.logger.experiment.add_image("Train_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
+        #     self.logger.experiment.add_image("Train_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
 
         preds = self(images)
         loss = self.criterion(preds, labels)
@@ -66,9 +67,10 @@ class ClassificationTask(lightning.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, labels = batch
 
-        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-            result = self.get_cam_image(image=images[0])
-            self.logger.experiment.add_image("CAM_val", result, self.global_step)
+        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+        #     self.logger.experiment.add_image("Val_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
+        #     self.logger.experiment.add_image("Val_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
+        #     self.logger.experiment.add_image("Val_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
 
         cur_time = time.time_ns()
         preds = self(images)
@@ -130,10 +132,34 @@ class ClassificationTask(lightning.LightningModule):
         numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
         numpy_image = np.transpose(numpy_image, [1, 2, 0])
 
-        with CAM(self, target_layer="model.header.0", fc_layer="model.header.2") as cam_extractor:
+        with CAM(self, target_layer="model.backbone", fc_layer="model.header.2") as cam_extractor:
             out = self(torch.unsqueeze(image, dim=0))
             activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
             result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0), mode='F'), alpha=0.5)
+            result = to_tensor(result)
+
+        return result
+
+    def get_grad_cam_image(self, image: Tensor) -> Tensor:
+        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = np.transpose(numpy_image, [1, 2, 0])
+
+        with torch.enable_grad():
+            with GradCAMpp(self, target_layer="model.backbone") as cam_extractor:
+                out = self(torch.unsqueeze(image, dim=0))
+                activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
+                result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0), mode='F'), alpha=0.5)
+                result = to_tensor(result)
+
+        return result
+
+    def get_recipro_cam_image(self, image: Tensor) -> Tensor:
+        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = np.transpose(numpy_image, [1, 2, 0])
+
+        with ReciproCAM(backbone=self.model.backbone, head=self.model.header) as cam_extractor:
+            activation_map = cam_extractor(torch.unsqueeze(image, dim=0))
+            result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0).detach(), mode='F'), alpha=0.5)
             result = to_tensor(result)
 
         return result
@@ -152,7 +178,7 @@ class ClassificationTrainer(BasicTrainer):
         if config.save_best_model:
             checkpoint_callback += [
                 ModelCheckpoint(
-                    dirpath=config.log_dir, filename="best.pt", monitor="val_acc"
+                    dirpath=config.log_dir, filename="best.pt", monitor="val_acc", save_last=True,
                 )
             ]
 
