@@ -15,9 +15,7 @@ def one_cycle_lr(config: LRScheduler) -> Callable[..., optim.lr_scheduler.LRSche
         return lr_scheduler.OneCycleLR(
             optimizer=optimizer,
             max_lr=max_lr,
-            total_steps=config.one_cycle_lr.total_steps,
-            epochs=config.one_cycle_lr.epochs,
-            steps_per_epoch=config.one_cycle_lr.steps_per_epoch,
+            total_steps=config.total_steps,
             pct_start=config.one_cycle_lr.pct_start,
             anneal_strategy=config.one_cycle_lr.anneal_strategy,
             cycle_momentum=config.one_cycle_lr.cycle_momentum,

@@ -16,6 +16,7 @@ from vision.configs.dataset import Dataset
 @dataclasses.dataclass
 class ClassificationTrainer:
     classification_model: ClassificationModel = ClassificationModel()
+    total_steps: Optional[int] = None
     optimizer: Optimizer = Optimizer(type="adam")
     lr_scheduler: Optional[LRScheduler] = None
     loss: Loss = Loss(type="cross_entropy_loss")

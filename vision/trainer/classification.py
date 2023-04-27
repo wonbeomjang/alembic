@@ -44,11 +44,11 @@ class ClassificationTask(lightning.LightningModule):
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
-        #
-        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-        #     self.logger.experiment.add_image("Train_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
-        #     self.logger.experiment.add_image("Train_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
-        #     self.logger.experiment.add_image("Train_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
+
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            self.logger.experiment.add_image("Train_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image("Train_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image("Train_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
 
         preds = self(images)
         loss = self.criterion(preds, labels)
@@ -67,10 +67,10 @@ class ClassificationTask(lightning.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, labels = batch
 
-        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-        #     self.logger.experiment.add_image("Val_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
-        #     self.logger.experiment.add_image("Val_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
-        #     self.logger.experiment.add_image("Val_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            self.logger.experiment.add_image("Val_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image("Val_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image("Val_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
 
         cur_time = time.time_ns()
         preds = self(images)
@@ -122,6 +122,9 @@ class ClassificationTask(lightning.LightningModule):
     ]:
         optimizer = get_optimizer(self.config.optimizer)(self.parameters())
         if self.config.lr_scheduler is not None:
+            if self.config.lr_scheduler.total_steps is None:
+                self.config.lr_scheduler.total_steps = self.config.total_steps
+
             lr_scheduler = get_lr_scheduler(self.config.lr_scheduler)(
                 optimizer, self.config.optimizer.lr
             )
@@ -166,9 +169,8 @@ class ClassificationTask(lightning.LightningModule):
 
 
 class ClassificationTrainer(BasicTrainer):
-    def __init__(
-        self, config: trainer_config.Trainer, model: lightning.LightningModule
-    ):
+    def __init__(self, config: trainer_config.Trainer):
+
         self.config = config
         logger = None
         checkpoint_callback = []
@@ -182,15 +184,22 @@ class ClassificationTrainer(BasicTrainer):
                 )
             ]
 
-        self.model = model
         self.train_loader = get_dataloader(config.train_data)
-        log_step = len(self.train_loader.dataset) // config.train_data.batch_size
+        step_per_epochs = len(self.train_loader)
+
+        if config.classification.total_steps is None:
+            config.classification.total_steps = step_per_epochs * config.epochs
+
+        if config.classification.classification_model.num_classes is None:
+            config.classification.classification_model.num_classes = self.train_loader.dataset.get_num_classes()
+
+        self.model = ClassificationTask(config.classification)
 
         self.trainer = Trainer(
             max_epochs=config.epochs,
             logger=logger,
             callbacks=checkpoint_callback,
-            log_every_n_steps=log_step,
+            log_every_n_steps=step_per_epochs,
         )
 
         if config.val_data is not None:
@@ -216,7 +225,6 @@ class ClassificationTrainer(BasicTrainer):
 def classification_trainer(config: trainer_config.Trainer):
     assert config.type == "classification"
 
-    model = ClassificationTask(config.classification)
-    trainer = ClassificationTrainer(config, model)
+    trainer = ClassificationTrainer(config)
 
     return trainer

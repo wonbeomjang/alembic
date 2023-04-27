@@ -111,22 +111,19 @@ def neurocle_cla_resnet():
         type="classification",
         logger="tensorboard",
         save_best_model=True,
+        epochs=epochs,
         classification=ClassificationTrainer(
-            classification_model=ClassificationModel(num_classes=2),
+            classification_model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             lr_scheduler=LRScheduler(
                 type="one_cycle_lr",
-                one_cycle_lr=OneCycleLR(
-                    epochs=epochs,
-                    steps_per_epoch=7,
-                ),
+                one_cycle_lr=OneCycleLR(),
             ),
             loss=Loss(
                 type="cross_entropy_loss",
                 cross_entropy_loss=CrossEntropyLoss(),
             ),
         ),
-        epochs=epochs,
         train_data=Dataset(
             type="neurocle_classification",
             image_dir=os.path.join(NEUROCLE_BASE_DIR, NEUROCLE_IMAGE_DIR),
@@ -161,6 +158,79 @@ def neurocle_cla_resnet():
             type="neurocle_classification",
             image_dir=os.path.join(NEUROCLE_BASE_DIR, NEUROCLE_IMAGE_DIR),
             label_path=os.path.join(NEUROCLE_BASE_DIR, NEUROCLE_LABEL),
+            is_train=False,
+            augmentation=Augmentation(
+                aug_list=[
+                    ("LongestMaxSize", {"max_size": max(image_size)}),
+                    (
+                        "PadIfNeeded",
+                        {
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
+                            "border_mode": cv2.BORDER_CONSTANT,
+                        },
+                    ),
+                    ("Normalize", {}),
+                ]
+            ),
+        ),
+    )
+
+    return exp_config
+
+
+@register_experiment_config("neurocle_cla_led")
+def neurocle_cla_led():
+    epochs: int = 300
+    image_size: Tuple[int, int, int] = (3, 256, 256)
+    batch_size: int = 256
+    num_workers: int = 4
+    learning_rate: float = 1e-4
+
+    exp_config = Trainer(
+        type="classification",
+        logger="tensorboard",
+        log_dir="led",
+        save_best_model=True,
+        classification=ClassificationTrainer(
+            classification_model=ClassificationModel(),
+            optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
+            loss=Loss(
+                type="cross_entropy_loss",
+                cross_entropy_loss=CrossEntropyLoss(),
+            ),
+        ),
+        epochs=epochs,
+        train_data=Dataset(
+            type="neurocle_classification",
+            image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
+            label_path=os.path.join("..", "datasets", "neurocle_cla", "led", "label.json"),
+            is_train=True,
+            image_size=image_size,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            augmentation=Augmentation(
+                aug_list=[
+                    ("LongestMaxSize", {"max_size": max(image_size)}),
+                    (
+                        "PadIfNeeded",
+                        {
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
+                            "border_mode": cv2.BORDER_CONSTANT,
+                        },
+                    ),
+                    ("Affine", {"translate_percent": 0.1}),
+                    ("HorizontalFlip", {}),
+                    ("Normalize", {}),
+                ]
+            ),
+        ),
+        val_data=Dataset(
+            type="neurocle_classification",
+            image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
+            label_path=os.path.join("..", "datasets", "neurocle_cla", "led", "label.json"),
             is_train=False,
             augmentation=Augmentation(
                 aug_list=[

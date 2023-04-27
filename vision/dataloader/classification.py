@@ -4,16 +4,17 @@ import os.path
 from typing import Dict, Tuple
 
 from torch import Tensor
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import albumentations as A
 import cv2
 
 from vision.configs import dataset as dataset_config
 from vision.dataloader import register_dataloader
+from vision.dataloader.core import BaseDataset
 from vision.dataloader.utils import parse_augmentation
 
 
-class ImageClassificationDataset(Dataset):
+class ImageClassificationDataset(BaseDataset):
     def __init__(self, config: dataset_config.Dataset) -> None:
         super().__init__()
         with open(config.label_path) as f:
@@ -42,6 +43,9 @@ class ImageClassificationDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.labels)
+
+    def get_num_classes(self) -> int:
+        return len(self.category_to_index)
 
 
 @register_dataloader("classification")

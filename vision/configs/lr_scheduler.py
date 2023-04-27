@@ -4,9 +4,6 @@ from typing import Optional, Union, List
 
 @dataclasses.dataclass
 class OneCycleLR:
-    total_steps: Optional[int] = None
-    epochs: Optional[int] = None
-    steps_per_epoch: Optional[int] = None
     pct_start: float = 0.3
     anneal_strategy: str = "cos"
     cycle_momentum: bool = True
@@ -23,3 +20,5 @@ class OneCycleLR:
 class LRScheduler:
     type: Optional[str] = None
     one_cycle_lr: OneCycleLR = OneCycleLR()
+
+    total_steps: Optional[int] = None
