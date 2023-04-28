@@ -11,4 +11,4 @@ class ClassificationModel(ModelConfig):
 
     type: Optional[str] = "classification"
     num_classes: Optional[int] = None
-    backbone = backbones.Backbone(type="alembic_resnet")
+    backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")

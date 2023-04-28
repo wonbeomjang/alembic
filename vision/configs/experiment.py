@@ -3,7 +3,7 @@ from typing import Tuple
 
 import cv2
 
-from vision.configs import register_experiment_config
+from vision.configs import register_experiment_config, backbones
 from vision.configs.classification import ClassificationModel
 from vision.configs.dataset import Dataset, Augmentation
 from vision.configs.loss import Loss, CrossEntropyLoss
@@ -34,7 +34,14 @@ def dog_vs_cat_classification_resnet():
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTrainer(
-            classification_model=ClassificationModel(),
+            classification_model=ClassificationModel(
+                backbone=backbones.Backbone(
+                    type="alembic_mobilenet",
+                    alembic_mobilenet=backbones.AlembicMobileNet(
+                        type="mobilenet_v3_large"
+                    ),
+                )
+            ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
                 type="cross_entropy_loss",
