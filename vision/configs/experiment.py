@@ -34,7 +34,7 @@ def dog_vs_cat_classification_resnet():
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTrainer(
-            classification_model=ClassificationModel(num_classes=2),
+            classification_model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
                 type="cross_entropy_loss",
@@ -62,11 +62,6 @@ def dog_vs_cat_classification_resnet():
                         },
                     ),
                     ("HorizontalFlip", {}),
-                    ("VerticalFlip", {}),
-                    ("GaussianBlur", {"p": 0.2}),
-                    ("RandomBrightnessContrast", {"p": 0.2}),
-                    ("RandomGamma", {"p": 0.2}),
-                    ("Rotate", {"limit": 180}),
                     ("Normalize", {}),
                 ]
             ),
@@ -204,7 +199,9 @@ def neurocle_cla_led():
         train_data=Dataset(
             type="neurocle_classification",
             image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
-            label_path=os.path.join("..", "datasets", "neurocle_cla", "led", "label.json"),
+            label_path=os.path.join(
+                "..", "datasets", "neurocle_cla", "led", "label.json"
+            ),
             is_train=True,
             image_size=image_size,
             batch_size=batch_size,
@@ -230,7 +227,9 @@ def neurocle_cla_led():
         val_data=Dataset(
             type="neurocle_classification",
             image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
-            label_path=os.path.join("..", "datasets", "neurocle_cla", "led", "label.json"),
+            label_path=os.path.join(
+                "..", "datasets", "neurocle_cla", "led", "label.json"
+            ),
             is_train=False,
             augmentation=Augmentation(
                 aug_list=[
