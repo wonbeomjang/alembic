@@ -1,3 +1,4 @@
+import os.path
 import time
 from typing import Any, Union, Tuple, List, Dict
 
@@ -9,7 +10,6 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim, Tensor
-from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 from torchvision.transforms.functional import to_pil_image, to_tensor
@@ -112,13 +112,13 @@ class ClassificationTask(lightning.LightningModule):
     def on_train_epoch_end(self) -> None:
         super().on_train_epoch_end()
         lr_scheduler = self.lr_schedulers()
-        if isinstance(lr_scheduler, optim.lr_scheduler.LRScheduler):
+        if isinstance(lr_scheduler, optim.lr_scheduler._LRScheduler):
             self.log_dict({"lr": lr_scheduler.get_last_lr()[0]})
 
     def configure_optimizers(
         self,
     ) -> Union[
-        Tuple[List[Optimizer], List[Dict[str, Union[LRScheduler, str]]]], Optimizer
+        Tuple[List[Optimizer], List[Dict[str, Union[optim.lr_scheduler._LRScheduler, str]]]], Optimizer
     ]:
         optimizer = get_optimizer(self.config.optimizer)(self.parameters())
         if self.config.lr_scheduler is not None:
@@ -174,36 +174,40 @@ class ClassificationTrainer(BasicTrainer):
         self.config = config
         logger = None
         checkpoint_callback = []
-        if config.logger == "tensorboard":
-            logger = TensorBoardLogger(save_dir=config.log_dir)
+        if self.config.logger == "tensorboard":
+            logger = TensorBoardLogger(save_dir=self.config.log_dir)
 
-        if config.save_best_model:
+        if self.config.save_best_model:
             checkpoint_callback += [
                 ModelCheckpoint(
-                    dirpath=config.log_dir, filename="best.pt", monitor="val_acc", save_last=True,
+                    dirpath=self.config.log_dir, filename="best", monitor="val_acc", save_last=True,
                 )
             ]
 
-        self.train_loader = get_dataloader(config.train_data)
+        self.train_loader = get_dataloader(self.config.train_data)
         step_per_epochs = len(self.train_loader)
 
-        if config.classification.total_steps is None:
-            config.classification.total_steps = step_per_epochs * config.epochs
+        if self.config.classification.total_steps is None:
+            self.config.classification.total_steps = step_per_epochs * self.config.epochs
 
-        if config.classification.classification_model.num_classes is None:
-            config.classification.classification_model.num_classes = self.train_loader.dataset.get_num_classes()
+        if self.config.classification.classification_model.num_classes is None:
+            self.config.classification.classification_model.num_classes = self.train_loader.dataset.get_num_classes()
 
-        self.model = ClassificationTask(config.classification)
+        self.model = ClassificationTask(self.config.classification)
+
+        last_path = os.path.join(config.log_dir, "last.ckpt")
+        if os.path.exists(last_path):
+            self.config.ckpt = last_path
 
         self.trainer = Trainer(
-            max_epochs=config.epochs,
+            max_epochs=self.config.epochs,
             logger=logger,
             callbacks=checkpoint_callback,
             log_every_n_steps=step_per_epochs,
         )
 
-        if config.val_data is not None:
-            self.val_loader = get_dataloader(config.val_data)
+        if self.config.val_data is not None:
+            self.val_loader = get_dataloader(self.config.val_data)
         else:
             self.val_loader = None
 
@@ -212,7 +216,7 @@ class ClassificationTrainer(BasicTrainer):
 
     def train_and_eval(self):
         assert self.val_loader is not None
-        self.trainer.fit(self.model, self.train_loader, self.val_loader)
+        self.trainer.fit(self.model, self.train_loader, self.val_loader, ckpt_path=self.config.ckpt)
 
     def test(self, test_dataloader: DataLoader):
         self.trainer.test(self.model, test_dataloader)

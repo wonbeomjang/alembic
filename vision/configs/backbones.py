@@ -23,7 +23,16 @@ class AlembicMobileNet(ModelConfig):
 
 
 @dataclasses.dataclass
+class AlembicGhostNet(ModelConfig):
+    """ResNet config."""
+
+    model_id: str = "ghostnet_050"
+    pretrained: bool = True
+
+
+@dataclasses.dataclass
 class Backbone(ModelConfig):
     type: Optional[str] = None
     alembic_resnet: AlembicResNet = AlembicResNet()
     alembic_mobilenet: AlembicMobileNet = AlembicMobileNet()
+    alembic_ghostnet: AlembicGhostNet = AlembicGhostNet()

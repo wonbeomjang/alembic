@@ -18,7 +18,8 @@ DOG_VS_CAT_BASE_VAL_LABEL = "val.json"
 DOG_VS_CAT_BASE_IMAGE_DIR_NAME = "images"
 
 
-NEUROCLE_BASE_DIR = os.path.join("..", "datasets", "cla")
+NEUROCLE_BASE_DIR = "/app/input/dataset/classification-pytorch"
+# NEUROCLE_BASE_DIR = os.path.join("..", "datasets", "cla")
 NEUROCLE_LABEL = "hanlim_label.json"
 NEUROCLE_IMAGE_DIR = "images"
 
@@ -27,20 +28,14 @@ NEUROCLE_IMAGE_DIR = "images"
 def dog_vs_cat_classification_resnet():
     epochs: int = 100
     image_size: Tuple[int, int, int] = (3, 256, 256)
-    batch_size: int = 32
+    batch_size: int = 256
     num_workers: int = 4
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-4
 
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTrainer(
             classification_model=ClassificationModel(
-                backbone=backbones.Backbone(
-                    type="alembic_mobilenet",
-                    alembic_mobilenet=backbones.AlembicMobileNet(
-                        type="mobilenet_v3_large"
-                    ),
-                )
             ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
@@ -183,19 +178,28 @@ def neurocle_cla_resnet():
 
 @register_experiment_config("neurocle_cla_led")
 def neurocle_cla_led():
-    epochs: int = 300
+    epochs: int = 400
     image_size: Tuple[int, int, int] = (3, 256, 256)
     batch_size: int = 256
-    num_workers: int = 4
-    learning_rate: float = 1e-4
+    num_workers: int = 16
+    learning_rate: float = 5e-4
+
+    # base_dir = os.path.join("/", "app", "input", "dataset", "classification")
+    base_dir = os.path.join("..", "datasets", "neurocle_cla")
 
     exp_config = Trainer(
         type="classification",
         logger="tensorboard",
         log_dir="led",
+        # log_dir="/app/outputs/",
         save_best_model=True,
         classification=ClassificationTrainer(
-            classification_model=ClassificationModel(),
+            classification_model=ClassificationModel(
+                backbone=backbones.Backbone(
+                    type="alembic_ghostnet",
+                    alembic_ghostnet=backbones.AlembicGhostNet()
+                )
+            ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
                 type="cross_entropy_loss",
@@ -205,10 +209,8 @@ def neurocle_cla_led():
         epochs=epochs,
         train_data=Dataset(
             type="neurocle_classification",
-            image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
-            label_path=os.path.join(
-                "..", "datasets", "neurocle_cla", "led", "label.json"
-            ),
+            image_dir=os.path.join(base_dir, "led", "image"),
+            label_path=os.path.join(base_dir, "led", "base_train.json"),
             is_train=True,
             image_size=image_size,
             batch_size=batch_size,
@@ -227,16 +229,15 @@ def neurocle_cla_led():
                     ),
                     ("Affine", {"translate_percent": 0.1}),
                     ("HorizontalFlip", {}),
+                    ("VerticalFlip", {}),
                     ("Normalize", {}),
                 ]
             ),
         ),
         val_data=Dataset(
             type="neurocle_classification",
-            image_dir=os.path.join("..", "datasets", "neurocle_cla", "led", "image"),
-            label_path=os.path.join(
-                "..", "datasets", "neurocle_cla", "led", "label.json"
-            ),
+            image_dir=os.path.join(base_dir, "led", "image"),
+            label_path=os.path.join(base_dir, "led", "base_train.json"),
             is_train=False,
             augmentation=Augmentation(
                 aug_list=[

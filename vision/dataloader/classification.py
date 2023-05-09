@@ -58,12 +58,12 @@ def classification_dataloader(config: dataset_config.Dataset):
         batch_size=config.batch_size,
         shuffle=config.shuffle,
         num_workers=config.num_workers,
-        pin_memory=config.pin_memory,
-        drop_last=config.drop_last,
-        timeout=config.timeout,
-        prefetch_factor=config.prefetch_factor,
-        persistent_workers=config.persistent_workers,
-        pin_memory_device=config.pin_memory_device,
+        # pin_memory=config.pin_memory,
+        # drop_last=config.drop_last,
+        # timeout=config.timeout,
+        # prefetch_factor=config.prefetch_factor,
+        # persistent_workers=config.persistent_workers,
+        # pin_memory_device=config.pin_memory_device,
     )
 
     return dataloader
