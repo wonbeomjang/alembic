@@ -44,7 +44,9 @@ class Test(parameterized.TestCase):
 
         self.assertEqual(5, len(result.keys()))
 
-    @parameterized.parameters(*resnet.support_model, *mobilenet.support_model, *ghostnet.support_model)
+    @parameterized.parameters(
+        *resnet.support_model, *mobilenet.support_model, *ghostnet.support_model
+    )
     def test_classification_model(self, backbone_id):
         classification_cfg = classification.ClassificationModel()
         classification_cfg.backbone.alembic_resnet.type = backbone_id

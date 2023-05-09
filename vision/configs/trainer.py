@@ -1,4 +1,5 @@
 import dataclasses
+
 try:
     from typing_extensions import Literal
     from typing import Optional

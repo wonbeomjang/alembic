@@ -46,9 +46,21 @@ class ClassificationTask(lightning.LightningModule):
         images, labels = batch
 
         if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-            self.logger.experiment.add_image("Train_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
-            self.logger.experiment.add_image("Train_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
-            self.logger.experiment.add_image("Train_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image(
+                "Train_CAM/BasicCAM",
+                self.get_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Train_CAM/GradCAM",
+                self.get_grad_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Train_CAM/ReciproCAM",
+                self.get_recipro_cam_image(image=images[0]),
+                self.global_step,
+            )
 
         preds = self(images)
         loss = self.criterion(preds, labels)
@@ -68,9 +80,21 @@ class ClassificationTask(lightning.LightningModule):
         images, labels = batch
 
         if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-            self.logger.experiment.add_image("Val_CAM/BasicCAM", self.get_cam_image(image=images[0]), self.global_step)
-            self.logger.experiment.add_image("Val_CAM/GradCAM", self.get_grad_cam_image(image=images[0]), self.global_step)
-            self.logger.experiment.add_image("Val_CAM/ReciproCAM", self.get_recipro_cam_image(image=images[0]), self.global_step)
+            self.logger.experiment.add_image(
+                "Val_CAM/BasicCAM",
+                self.get_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Val_CAM/GradCAM",
+                self.get_grad_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Val_CAM/ReciproCAM",
+                self.get_recipro_cam_image(image=images[0]),
+                self.global_step,
+            )
 
         cur_time = time.time_ns()
         preds = self(images)
@@ -118,7 +142,11 @@ class ClassificationTask(lightning.LightningModule):
     def configure_optimizers(
         self,
     ) -> Union[
-        Tuple[List[Optimizer], List[Dict[str, Union[optim.lr_scheduler._LRScheduler, str]]]], Optimizer
+        Tuple[
+            List[Optimizer],
+            List[Dict[str, Union[optim.lr_scheduler._LRScheduler, str]]],
+        ],
+        Optimizer,
     ]:
         optimizer = get_optimizer(self.config.optimizer)(self.parameters())
         if self.config.lr_scheduler is not None:
@@ -132,37 +160,68 @@ class ClassificationTask(lightning.LightningModule):
         return optimizer
 
     def get_cam_image(self, image: Tensor) -> Tensor:
-        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = (
+            (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255)
+            .cpu()
+            .numpy()
+            .astype(np.uint8)
+        )
         numpy_image = np.transpose(numpy_image, [1, 2, 0])
 
-        with CAM(self, target_layer="model.backbone", fc_layer="model.header.2") as cam_extractor:
+        with CAM(
+            self, target_layer="model.backbone", fc_layer="model.header.2"
+        ) as cam_extractor:
             out = self(torch.unsqueeze(image, dim=0))
             activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
-            result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0), mode='F'), alpha=0.5)
+            result = overlay_mask(
+                to_pil_image(numpy_image),
+                to_pil_image(activation_map[0].squeeze(0), mode="F"),
+                alpha=0.5,
+            )
             result = to_tensor(result)
 
         return result
 
     def get_grad_cam_image(self, image: Tensor) -> Tensor:
-        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = (
+            (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255)
+            .cpu()
+            .numpy()
+            .astype(np.uint8)
+        )
         numpy_image = np.transpose(numpy_image, [1, 2, 0])
 
         with torch.enable_grad():
             with GradCAMpp(self, target_layer="model.backbone") as cam_extractor:
                 out = self(torch.unsqueeze(image, dim=0))
                 activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
-                result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0), mode='F'), alpha=0.5)
+                result = overlay_mask(
+                    to_pil_image(numpy_image),
+                    to_pil_image(activation_map[0].squeeze(0), mode="F"),
+                    alpha=0.5,
+                )
                 result = to_tensor(result)
 
         return result
 
     def get_recipro_cam_image(self, image: Tensor) -> Tensor:
-        numpy_image = (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255).cpu().numpy().astype(np.uint8)
+        numpy_image = (
+            (((image * STD.to(self.device)) + MEAN.to(self.device)) * 255)
+            .cpu()
+            .numpy()
+            .astype(np.uint8)
+        )
         numpy_image = np.transpose(numpy_image, [1, 2, 0])
 
-        with ReciproCAM(backbone=self.model.backbone, head=self.model.header) as cam_extractor:
+        with ReciproCAM(
+            backbone=self.model.backbone, head=self.model.header
+        ) as cam_extractor:
             activation_map = cam_extractor(torch.unsqueeze(image, dim=0))
-            result = overlay_mask(to_pil_image(numpy_image), to_pil_image(activation_map[0].squeeze(0).detach(), mode='F'), alpha=0.5)
+            result = overlay_mask(
+                to_pil_image(numpy_image),
+                to_pil_image(activation_map[0].squeeze(0).detach(), mode="F"),
+                alpha=0.5,
+            )
             result = to_tensor(result)
 
         return result
@@ -170,7 +229,6 @@ class ClassificationTask(lightning.LightningModule):
 
 class ClassificationTrainer(BasicTrainer):
     def __init__(self, config: trainer_config.Trainer):
-
         self.config = config
         logger = None
         checkpoint_callback = []
@@ -180,7 +238,10 @@ class ClassificationTrainer(BasicTrainer):
         if self.config.save_best_model:
             checkpoint_callback += [
                 ModelCheckpoint(
-                    dirpath=self.config.log_dir, filename="best", monitor="val_acc", save_last=True,
+                    dirpath=self.config.log_dir,
+                    filename="best",
+                    monitor="val_acc",
+                    save_last=True,
                 )
             ]
 
@@ -188,10 +249,14 @@ class ClassificationTrainer(BasicTrainer):
         step_per_epochs = len(self.train_loader)
 
         if self.config.classification.total_steps is None:
-            self.config.classification.total_steps = step_per_epochs * self.config.epochs
+            self.config.classification.total_steps = (
+                step_per_epochs * self.config.epochs
+            )
 
         if self.config.classification.classification_model.num_classes is None:
-            self.config.classification.classification_model.num_classes = self.train_loader.dataset.get_num_classes()
+            self.config.classification.classification_model.num_classes = (
+                self.train_loader.dataset.get_num_classes()
+            )
 
         self.model = ClassificationTask(self.config.classification)
 
@@ -216,7 +281,9 @@ class ClassificationTrainer(BasicTrainer):
 
     def train_and_eval(self):
         assert self.val_loader is not None
-        self.trainer.fit(self.model, self.train_loader, self.val_loader, ckpt_path=self.config.ckpt)
+        self.trainer.fit(
+            self.model, self.train_loader, self.val_loader, ckpt_path=self.config.ckpt
+        )
 
     def test(self, test_dataloader: DataLoader):
         self.trainer.test(self.model, test_dataloader)

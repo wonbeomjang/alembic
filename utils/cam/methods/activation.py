@@ -49,12 +49,13 @@ class CAM(_CAM):
     def __init__(
         self,
         model: nn.Module,
-        target_layer: Optional[Union[Union[nn.Module, str], List[Union[nn.Module, str]]]] = None,
+        target_layer: Optional[
+            Union[Union[nn.Module, str], List[Union[nn.Module, str]]]
+        ] = None,
         fc_layer: Optional[Union[nn.Module, str]] = None,
         input_shape: Tuple[int, ...] = (3, 224, 224),
         **kwargs: Any,
     ) -> None:
-
         if isinstance(target_layer, list) and len(target_layer) > 1:
             raise ValueError("base CAM does not support multiple target layers")
 
@@ -70,9 +71,13 @@ class CAM(_CAM):
             fc_name = locate_linear_layer(model)  # type: ignore[assignment]
             # Warn the user of the choice
             if isinstance(fc_name, str):
-                logging.warning(f"no value was provided for `fc_layer`, thus set to '{fc_name}'.")
+                logging.warning(
+                    f"no value was provided for `fc_layer`, thus set to '{fc_name}'."
+                )
             else:
-                raise ValueError("unable to resolve `fc_layer` automatically, please specify its value.")
+                raise ValueError(
+                    "unable to resolve `fc_layer` automatically, please specify its value."
+                )
         else:
             raise TypeError("invalid argument type for `fc_layer`")
         # Softmax weight
@@ -138,12 +143,13 @@ class ScoreCAM(_CAM):
     def __init__(
         self,
         model: nn.Module,
-        target_layer: Optional[Union[Union[nn.Module, str], List[Union[nn.Module, str]]]] = None,
+        target_layer: Optional[
+            Union[Union[nn.Module, str], List[Union[nn.Module, str]]]
+        ] = None,
         batch_size: int = 32,
         input_shape: Tuple[int, ...] = (3, 224, 224),
         **kwargs: Any,
     ) -> None:
-
         super().__init__(model, target_layer, input_shape, **kwargs)
 
         # Input hook
@@ -159,17 +165,23 @@ class ScoreCAM(_CAM):
             self._input = input[0].data.clone()
 
     @torch.no_grad()
-    def _get_score_weights(self, activations: List[Tensor], class_idx: Union[int, List[int]]) -> List[Tensor]:
-
+    def _get_score_weights(
+        self, activations: List[Tensor], class_idx: Union[int, List[int]]
+    ) -> List[Tensor]:
         b, c = activations[0].shape[:2]
         # (N * C, I, H, W)
         scored_inputs = [
-            (act.unsqueeze(2) * self._input.unsqueeze(1)).view(b * c, *self._input.shape[1:]) for act in activations
+            (act.unsqueeze(2) * self._input.unsqueeze(1)).view(
+                b * c, *self._input.shape[1:]
+            )
+            for act in activations
         ]
 
         # Initialize weights
         # (N * C)
-        weights = [torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations]
+        weights = [
+            torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations
+        ]
 
         # (N, M)
         logits = self.model(self._input)
@@ -178,8 +190,9 @@ class ScoreCAM(_CAM):
         for idx, scored_input in enumerate(scored_inputs):
             # Process by chunk (GPU RAM limitation)
             for _idx in range(math.ceil(weights[idx].numel() / self.bs)):
-
-                _slice = slice(_idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel()))
+                _slice = slice(
+                    _idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel())
+                )
                 # Get the softmax probabilities of the target class
                 # (*, M)
                 cic = self.model(scored_input[_slice]) - logits[idcs[_slice]]
@@ -204,14 +217,27 @@ class ScoreCAM(_CAM):
 
         # Normalize the activation
         # (N, C, H', W')
-        upsampled_a = [self._normalize(act.clone(), act.ndim - 2) for act in self.hook_a]
+        upsampled_a = [
+            self._normalize(act.clone(), act.ndim - 2) for act in self.hook_a
+        ]
 
         # Upsample it to input_size
         # (N, C, H, W)
         spatial_dims = self._input.ndim - 2
-        interpolation_mode = "bilinear" if spatial_dims == 2 else "trilinear" if spatial_dims == 3 else "nearest"
+        interpolation_mode = (
+            "bilinear"
+            if spatial_dims == 2
+            else "trilinear"
+            if spatial_dims == 3
+            else "nearest"
+        )
         upsampled_a = [
-            F.interpolate(up_a, self._input.shape[2:], mode=interpolation_mode, align_corners=False)
+            F.interpolate(
+                up_a,
+                self._input.shape[2:],
+                mode=interpolation_mode,
+                align_corners=False,
+            )
             for up_a in upsampled_a
         ]
 
@@ -281,14 +307,15 @@ class SSCAM(ScoreCAM):
     def __init__(
         self,
         model: nn.Module,
-        target_layer: Optional[Union[Union[nn.Module, str], List[Union[nn.Module, str]]]] = None,
+        target_layer: Optional[
+            Union[Union[nn.Module, str], List[Union[nn.Module, str]]]
+        ] = None,
         batch_size: int = 32,
         num_samples: int = 35,
         std: float = 2.0,
         input_shape: Tuple[int, ...] = (3, 224, 224),
         **kwargs: Any,
     ) -> None:
-
         super().__init__(model, target_layer, batch_size, input_shape, **kwargs)
 
         self.num_samples = num_samples
@@ -296,13 +323,16 @@ class SSCAM(ScoreCAM):
         self._distrib = torch.distributions.normal.Normal(0, self.std)
 
     @torch.no_grad()
-    def _get_score_weights(self, activations: List[Tensor], class_idx: Union[int, List[int]]) -> List[Tensor]:
-
+    def _get_score_weights(
+        self, activations: List[Tensor], class_idx: Union[int, List[int]]
+    ) -> List[Tensor]:
         b, c = activations[0].shape[:2]
 
         # Initialize weights
         # (N * C)
-        weights = [torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations]
+        weights = [
+            torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations
+        ]
 
         # (N, M)
         logits = self.model(self._input)
@@ -319,18 +349,26 @@ class SSCAM(ScoreCAM):
 
                 # Process by chunk (GPU RAM limitation)
                 for _idx in range(math.ceil(weights[idx].numel() / self.bs)):
-
-                    _slice = slice(_idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel()))
+                    _slice = slice(
+                        _idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel())
+                    )
                     # Get the softmax probabilities of the target class
                     cic = self.model(scored_input[_slice]) - logits[idcs[_slice]]
                     if isinstance(class_idx, int):
                         weights[idx][_slice] += cic[:, class_idx]
                     else:
-                        _target = torch.tensor(class_idx, device=cic.device)[idcs[_slice]]
-                        weights[idx][_slice] += cic.gather(1, _target.view(-1, 1)).squeeze(1)
+                        _target = torch.tensor(class_idx, device=cic.device)[
+                            idcs[_slice]
+                        ]
+                        weights[idx][_slice] += cic.gather(
+                            1, _target.view(-1, 1)
+                        ).squeeze(1)
 
         # Reshape the weights (N, C)
-        return [torch.softmax(weight.div_(self.num_samples).view(b, c), -1) for weight in weights]
+        return [
+            torch.softmax(weight.div_(self.num_samples).view(b, c), -1)
+            for weight in weights
+        ]
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(batch_size={self.bs}, num_samples={self.num_samples}, std={self.std})"
@@ -381,28 +419,35 @@ class ISCAM(ScoreCAM):
     def __init__(
         self,
         model: nn.Module,
-        target_layer: Optional[Union[Union[nn.Module, str], List[Union[nn.Module, str]]]] = None,
+        target_layer: Optional[
+            Union[Union[nn.Module, str], List[Union[nn.Module, str]]]
+        ] = None,
         batch_size: int = 32,
         num_samples: int = 10,
         input_shape: Tuple[int, ...] = (3, 224, 224),
         **kwargs: Any,
     ) -> None:
-
         super().__init__(model, target_layer, batch_size, input_shape, **kwargs)
 
         self.num_samples = num_samples
 
     @torch.no_grad()
-    def _get_score_weights(self, activations: List[Tensor], class_idx: Union[int, List[int]]) -> List[Tensor]:
-
+    def _get_score_weights(
+        self, activations: List[Tensor], class_idx: Union[int, List[int]]
+    ) -> List[Tensor]:
         b, c = activations[0].shape[:2]
         # (N * C, I, H, W)
         scored_inputs = [
-            (act.unsqueeze(2) * self._input.unsqueeze(1)).view(b * c, *self._input.shape[1:]) for act in activations
+            (act.unsqueeze(2) * self._input.unsqueeze(1)).view(
+                b * c, *self._input.shape[1:]
+            )
+            for act in activations
         ]
 
         # Initialize weights
-        weights = [torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations]
+        weights = [
+            torch.zeros(b * c, dtype=t.dtype).to(device=t.device) for t in activations
+        ]
 
         # (N, M)
         logits = self.model(self._input)
@@ -416,15 +461,25 @@ class ISCAM(ScoreCAM):
 
                 # Process by chunk (GPU RAM limitation)
                 for _idx in range(math.ceil(weights[idx].numel() / self.bs)):
-
-                    _slice = slice(_idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel()))
+                    _slice = slice(
+                        _idx * self.bs, min((_idx + 1) * self.bs, weights[idx].numel())
+                    )
                     # Get the softmax probabilities of the target class
-                    cic = self.model(_coeff * scored_input[_slice]) - logits[idcs[_slice]]
+                    cic = (
+                        self.model(_coeff * scored_input[_slice]) - logits[idcs[_slice]]
+                    )
                     if isinstance(class_idx, int):
                         weights[idx][_slice] += cic[:, class_idx]
                     else:
-                        _target = torch.tensor(class_idx, device=cic.device)[idcs[_slice]]
-                        weights[idx][_slice] += cic.gather(1, _target.view(-1, 1)).squeeze(1)
+                        _target = torch.tensor(class_idx, device=cic.device)[
+                            idcs[_slice]
+                        ]
+                        weights[idx][_slice] += cic.gather(
+                            1, _target.view(-1, 1)
+                        ).squeeze(1)
 
         # Reshape the weights (N, C)
-        return [torch.softmax(weight.div_(self.num_samples).view(b, c), -1) for weight in weights]
+        return [
+            torch.softmax(weight.div_(self.num_samples).view(b, c), -1)
+            for weight in weights
+        ]

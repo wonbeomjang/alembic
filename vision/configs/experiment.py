@@ -35,8 +35,7 @@ def dog_vs_cat_classification_resnet():
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTrainer(
-            classification_model=ClassificationModel(
-            ),
+            classification_model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             loss=Loss(
                 type="cross_entropy_loss",
@@ -184,20 +183,46 @@ def neurocle_cla_led():
     num_workers: int = 16
     learning_rate: float = 5e-4
 
-    # base_dir = os.path.join("/", "app", "input", "dataset", "classification")
     base_dir = os.path.join("..", "datasets", "neurocle_cla")
+    log_dir = "led"
 
+    # base_dir = "/app/input/dataset/classification"
+    # log_dir = "/app/outputs"
+    image_dir = os.path.join(base_dir, "led", "image")
+    label_path = os.path.join(base_dir, "led", "label.json")
+
+    return neurocle_cla_geometric_aug_base(
+        batch_size,
+        epochs,
+        image_dir,
+        image_size,
+        label_path,
+        learning_rate,
+        log_dir,
+        num_workers,
+    )
+
+
+def neurocle_cla_geometric_aug_base(
+    batch_size: int,
+    epochs: int,
+    image_dir: str,
+    image_size: Tuple[int, int, int],
+    label_path: str,
+    learning_rate: float,
+    log_dir: str,
+    num_workers: int,
+):
     exp_config = Trainer(
         type="classification",
         logger="tensorboard",
-        log_dir="led",
-        # log_dir="/app/outputs/",
+        log_dir=log_dir,
         save_best_model=True,
         classification=ClassificationTrainer(
             classification_model=ClassificationModel(
                 backbone=backbones.Backbone(
-                    type="alembic_ghostnet",
-                    alembic_ghostnet=backbones.AlembicGhostNet()
+                    type="alembic_mobilenet",
+                    pretrained=False,
                 )
             ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
@@ -209,8 +234,8 @@ def neurocle_cla_led():
         epochs=epochs,
         train_data=Dataset(
             type="neurocle_classification",
-            image_dir=os.path.join(base_dir, "led", "image"),
-            label_path=os.path.join(base_dir, "led", "base_train.json"),
+            image_dir=image_dir,
+            label_path=label_path,
             is_train=True,
             image_size=image_size,
             batch_size=batch_size,
@@ -236,8 +261,8 @@ def neurocle_cla_led():
         ),
         val_data=Dataset(
             type="neurocle_classification",
-            image_dir=os.path.join(base_dir, "led", "image"),
-            label_path=os.path.join(base_dir, "led", "base_train.json"),
+            image_dir=image_dir,
+            label_path=label_path,
             is_train=False,
             augmentation=Augmentation(
                 aug_list=[
@@ -255,5 +280,4 @@ def neurocle_cla_led():
             ),
         ),
     )
-
     return exp_config

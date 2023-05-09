@@ -1,3 +1,4 @@
+import torch
 from timm import create_model
 from torch import nn
 from torchvision.models._api import register_model  # type: ignore
@@ -17,6 +18,10 @@ _ghostnet_return_nodes = {
     "blocks.4": "2",
     "blocks.6": "3",
     "blocks.9": "4",
+}
+_load_weight_type = {
+    "all": "blocks.9",
+    "half": "blocks.4",
 }
 
 support_model = [
@@ -42,7 +47,7 @@ def alembic_ghostnet(
 
     model = create_model(
         backbone_cfg.alembic_ghostnet.model_id,
-        pretrained=backbone_cfg.alembic_ghostnet.pretrained,
+        pretrained=backbone_cfg.pretrained,
     )
     model = create_feature_extractor(
         model,

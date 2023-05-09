@@ -2,6 +2,7 @@ from torch import nn
 from torchvision.models._api import register_model  # type: ignore
 from torchvision.models import get_model
 from torchvision.models.feature_extraction import create_feature_extractor
+from torchvision.models import mobilenet
 
 from vision.configs import backbones
 
@@ -40,6 +41,12 @@ support_model = [
     "mobilenet_v3_large",
 ]
 
+_weight_dict = {
+    "mobilenet_v2": mobilenet.MobileNet_V2_Weights.IMAGENET1K_V1,
+    "mobilenet_v3_small": mobilenet.MobileNet_V3_Small_Weights.IMAGENET1K_V1,
+    "mobilenet_v3_large": mobilenet.MobileNet_V3_Large_Weights.IMAGENET1K_V1,
+}
+
 
 @register_model("alembic_mobilenet")
 def alembic_mobilenet(
@@ -49,15 +56,21 @@ def alembic_mobilenet(
     Support model id
     - mobilenet_v2, mobilenet_v3_small, mobilenet_v3_large
 
-    :param backbone_cfg: config object of resnet
+    :param backbone_cfg: config object of mobilenet
     :return: feature extraction model
     """
     assert backbone_cfg.type == "alembic_mobilenet"
+    assert backbone_cfg.alembic_ghostnet.model_id in support_model
+
+    if backbone_cfg.pretrained:
+        weight = _weight_dict[backbone_cfg.alembic_mobilenet.model_id]
+    else:
+        weight = None
 
     model = get_model(
         backbone_cfg.alembic_mobilenet.model_id,
-        weights=backbone_cfg.alembic_resnet.weight,
-        progress=backbone_cfg.alembic_resnet.progress,
+        weights=weight,
+        progress=backbone_cfg.alembic_mobilenet.progress,
     )
     model = create_feature_extractor(
         model,

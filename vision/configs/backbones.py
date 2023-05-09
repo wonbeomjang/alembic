@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 from torchvision.models._api import WeightsEnum  # type: ignore
 from vision.configs.base_config import ModelConfig
 
@@ -9,7 +9,6 @@ class AlembicResNet(ModelConfig):
     """ResNet config."""
 
     model_id: str = "resnet18"
-    weight: Optional[Union[WeightsEnum, str]] = None
     progress: bool = True
 
 
@@ -17,8 +16,7 @@ class AlembicResNet(ModelConfig):
 class AlembicMobileNet(ModelConfig):
     """ResNet config."""
 
-    model_id: str = "mobilenet_v3_large"
-    weight: Optional[Union[WeightsEnum, str]] = None
+    model_id: str = "mobilenet_v2"
     progress: bool = True
 
 
@@ -27,12 +25,12 @@ class AlembicGhostNet(ModelConfig):
     """ResNet config."""
 
     model_id: str = "ghostnet_050"
-    pretrained: bool = True
 
 
 @dataclasses.dataclass
 class Backbone(ModelConfig):
     type: Optional[str] = None
+    pretrained: bool = False
     alembic_resnet: AlembicResNet = AlembicResNet()
     alembic_mobilenet: AlembicMobileNet = AlembicMobileNet()
     alembic_ghostnet: AlembicGhostNet = AlembicGhostNet()

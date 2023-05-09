@@ -49,7 +49,9 @@ class ReciproCAM:
                             r_feature_map = (
                                 feature_map[0, :, i, j]
                                 .reshape(num_channel, 1, 1)
-                                .repeat(1, self.gaussian.shape[0], self.gaussian.shape[1])
+                                .repeat(
+                                    1, self.gaussian.shape[0], self.gaussian.shape[1]
+                                )
                             )
                             score_map = r_feature_map * self.gaussian.repeat(
                                 num_channel, 1, 1
@@ -79,9 +81,7 @@ class ReciproCAM:
         _, _, height, widht = feature_map.shape
 
         # spatial masked feature map generation
-        spatial_masked_feature_map = self._mosaic_feature(
-            feature_map, is_gaussian=True
-        )
+        spatial_masked_feature_map = self._mosaic_feature(feature_map, is_gaussian=True)
 
         # reciprocal logit calculation
         reciprocal_predictions = self.head_net(spatial_masked_feature_map)
@@ -98,5 +98,10 @@ class ReciproCAM:
     def __enter__(self) -> "ReciproCAM":
         return self
 
-    def __exit__(self, exct_type: Type[BaseException], exce_value: BaseException, traceback: TracebackType) -> None:
+    def __exit__(
+        self,
+        exct_type: Type[BaseException],
+        exce_value: BaseException,
+        traceback: TracebackType,
+    ) -> None:
         pass

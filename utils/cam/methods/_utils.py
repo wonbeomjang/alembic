@@ -12,7 +12,9 @@ from torch import Tensor, nn
 __all__ = ["locate_candidate_layer", "locate_linear_layer"]
 
 
-def locate_candidate_layer(mod: nn.Module, input_shape: Tuple[int, ...] = (3, 224, 224)) -> Optional[str]:
+def locate_candidate_layer(
+    mod: nn.Module, input_shape: Tuple[int, ...] = (3, 224, 224)
+) -> Optional[str]:
     """Attempts to find a candidate layer to use for CAM extraction
 
     Args:
@@ -29,7 +31,12 @@ def locate_candidate_layer(mod: nn.Module, input_shape: Tuple[int, ...] = (3, 22
 
     output_shapes: List[Tuple[Optional[str], Tuple[int, ...]]] = []
 
-    def _record_output_shape(module: nn.Module, input: Tensor, output: Union[Tensor, Dict[str, Tensor]], name: Optional[str] = None) -> None:
+    def _record_output_shape(
+        module: nn.Module,
+        input: Tensor,
+        output: Union[Tensor, Dict[str, Tensor]],
+        name: Optional[str] = None,
+    ) -> None:
         """Activation hook."""
         if isinstance(output, dict):
             output_shapes.append((name, output[max(output.keys())].shape))
@@ -39,11 +46,15 @@ def locate_candidate_layer(mod: nn.Module, input_shape: Tuple[int, ...] = (3, 22
     hook_handles: List[torch.utils.hooks.RemovableHandle] = []
     # forward hook on all layers
     for n, m in mod.named_modules():
-        hook_handles.append(m.register_forward_hook(partial(_record_output_shape, name=n)))
+        hook_handles.append(
+            m.register_forward_hook(partial(_record_output_shape, name=n))
+        )
 
     # forward empty
     with torch.no_grad():
-        _ = mod(torch.zeros((1, *input_shape), device=next(mod.parameters()).data.device))
+        _ = mod(
+            torch.zeros((1, *input_shape), device=next(mod.parameters()).data.device)
+        )
 
     # Remove all temporary hooks
     for handle in hook_handles:
@@ -56,7 +67,9 @@ def locate_candidate_layer(mod: nn.Module, input_shape: Tuple[int, ...] = (3, 22
     candidate_layer = None
     for layer_name, output_shape in reversed(output_shapes):
         # Stop before flattening or global pooling
-        if len(output_shape) == (len(input_shape) + 1) and any(v != 1 for v in output_shape[2:]):
+        if len(output_shape) == (len(input_shape) + 1) and any(
+            v != 1 for v in output_shape[2:]
+        ):
             candidate_layer = layer_name
             break
 
