@@ -10,5 +10,5 @@ class ClassificationModel(ModelConfig):
     """ResNet config."""
 
     type: Optional[str] = "classification"
-    num_classes: int = 1000
-    backbone = backbones.Backbone(type="alembic_resnet")
+    num_classes: Optional[int] = None
+    backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")

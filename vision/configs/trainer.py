@@ -1,6 +1,11 @@
 import dataclasses
-from typing import Optional
-from typing_extensions import Literal
+
+try:
+    from typing_extensions import Literal
+    from typing import Optional
+except ModuleNotFoundError:
+    from typing import Optional, Literal
+
 
 from vision.configs.classification import ClassificationModel
 from vision.configs.loss import Loss
@@ -12,10 +17,12 @@ from vision.configs.dataset import Dataset
 @dataclasses.dataclass
 class ClassificationTrainer:
     classification_model: ClassificationModel = ClassificationModel()
+    total_steps: Optional[int] = None
     optimizer: Optimizer = Optimizer(type="adam")
     lr_scheduler: Optional[LRScheduler] = None
     loss: Loss = Loss(type="cross_entropy_loss")
     task: Literal["binary", "multiclass", "multilabel"] = "multiclass"
+    # cam: List[Literal["gradcampp", "gradcam", "reciporcam"]] = "gradcam"
 
 
 @dataclasses.dataclass

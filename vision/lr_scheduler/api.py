@@ -44,7 +44,7 @@ def list_lr_scheduler(module: Optional[ModuleType] = None) -> List[str]:
 
 def get_optimizer_builder(
     name: str,
-) -> Callable[..., Callable[..., optim.lr_scheduler.LRScheduler]]:
+) -> Callable[..., Callable[..., optim.lr_scheduler._LRScheduler]]:
     """
     Gets the model name and returns the model builder method.
 
@@ -64,7 +64,7 @@ def get_optimizer_builder(
 
 def get_lr_scheduler(
     optimizer_cfg: lr_scheduler.LRScheduler, **config: Any
-) -> Callable[..., optim.lr_scheduler.LRScheduler]:
+) -> Callable[..., optim.lr_scheduler._LRScheduler]:
     """
     Gets the model name and configuration and returns an instantiated model.
 

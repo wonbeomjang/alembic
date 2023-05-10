@@ -4,16 +4,17 @@ import os.path
 from typing import Dict, Tuple
 
 from torch import Tensor
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import albumentations as A
 import cv2
 
 from vision.configs import dataset as dataset_config
 from vision.dataloader import register_dataloader
+from vision.dataloader.core import BaseDataset
 from vision.dataloader.utils import parse_augmentation
 
 
-class ImageClassificationDataset(Dataset):
+class ImageClassificationDataset(BaseDataset):
     def __init__(self, config: dataset_config.Dataset) -> None:
         super().__init__()
         with open(config.label_path) as f:
@@ -43,6 +44,9 @@ class ImageClassificationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.labels)
 
+    def get_num_classes(self) -> int:
+        return len(self.category_to_index)
+
 
 @register_dataloader("classification")
 def classification_dataloader(config: dataset_config.Dataset):
@@ -54,12 +58,12 @@ def classification_dataloader(config: dataset_config.Dataset):
         batch_size=config.batch_size,
         shuffle=config.shuffle,
         num_workers=config.num_workers,
-        pin_memory=config.pin_memory,
-        drop_last=config.drop_last,
-        timeout=config.timeout,
-        prefetch_factor=config.prefetch_factor,
-        persistent_workers=config.persistent_workers,
-        pin_memory_device=config.pin_memory_device,
+        # pin_memory=config.pin_memory,
+        # drop_last=config.drop_last,
+        # timeout=config.timeout,
+        # prefetch_factor=config.prefetch_factor,
+        # persistent_workers=config.persistent_workers,
+        # pin_memory_device=config.pin_memory_device,
     )
 
     return dataloader
