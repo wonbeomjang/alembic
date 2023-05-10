@@ -39,9 +39,9 @@ def locate_candidate_layer(
     ) -> None:
         """Activation hook."""
         if isinstance(output, dict):
-            output_shapes.append((name, output[max(output.keys())].shape))
+            output_shapes.append((name, output[max(output.keys())].shape))  # type: ignore
         if isinstance(output, Tensor):
-            output_shapes.append((name, output.shape))
+            output_shapes.append((name, output.shape))  # type: ignore
 
     hook_handles: List[torch.utils.hooks.RemovableHandle] = []
     # forward hook on all layers

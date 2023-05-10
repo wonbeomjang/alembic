@@ -288,6 +288,7 @@ class SmoothGradCAMpp(_GradCAM):
         self._distrib = torch.distributions.normal.Normal(0, self.std)
         # Specific input hook updater
         self._ihook_enabled = True
+        self._input = torch.Tensor(0)
 
     def _store_input(self, module: nn.Module, input: Tensor) -> None:
         """Store model input tensor."""

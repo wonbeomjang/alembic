@@ -45,22 +45,22 @@ class ClassificationTask(lightning.LightningModule):
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
 
-        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-        #     self.logger.experiment.add_image(
-        #         "Train_CAM/BasicCAM",
-        #         self.get_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
-        #     self.logger.experiment.add_image(
-        #         "Train_CAM/GradCAM",
-        #         self.get_grad_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
-        #     self.logger.experiment.add_image(
-        #         "Train_CAM/ReciproCAM",
-        #         self.get_recipro_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            self.logger.experiment.add_image(
+                "Train_CAM/BasicCAM",
+                self.get_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Train_CAM/GradCAM",
+                self.get_grad_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Train_CAM/ReciproCAM",
+                self.get_recipro_cam_image(image=images[0]),
+                self.global_step,
+            )
 
         preds = self(images)
         loss = self.criterion(preds, labels)
@@ -79,22 +79,22 @@ class ClassificationTask(lightning.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, labels = batch
 
-        # if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
-        #     self.logger.experiment.add_image(
-        #         "Val_CAM/BasicCAM",
-        #         self.get_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
-        #     self.logger.experiment.add_image(
-        #         "Val_CAM/GradCAM",
-        #         self.get_grad_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
-        #     self.logger.experiment.add_image(
-        #         "Val_CAM/ReciproCAM",
-        #         self.get_recipro_cam_image(image=images[0]),
-        #         self.global_step,
-        #     )
+        if batch_idx == 0 and isinstance(self.logger, TensorBoardLogger):
+            self.logger.experiment.add_image(
+                "Val_CAM/BasicCAM",
+                self.get_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Val_CAM/GradCAM",
+                self.get_grad_cam_image(image=images[0]),
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "Val_CAM/ReciproCAM",
+                self.get_recipro_cam_image(image=images[0]),
+                self.global_step,
+            )
 
         cur_time = time.time_ns()
         preds = self(images)

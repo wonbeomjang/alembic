@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Type
+from typing import Type, Optional
 
 import numpy as np
 
@@ -100,8 +100,8 @@ class ReciproCAM:
 
     def __exit__(
         self,
-        exct_type: Type[BaseException],
-        exce_value: BaseException,
-        traceback: TracebackType,
+        exct_type: Optional[Type[BaseException]],
+        exce_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> None:
         pass
