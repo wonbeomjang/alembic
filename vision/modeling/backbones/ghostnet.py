@@ -1,9 +1,7 @@
-import torch
 from timm import create_model
 from torch import nn
 from torchvision.models._api import register_model  # type: ignore
 from torchvision.models.feature_extraction import create_feature_extractor
-import timm
 
 from vision.configs import backbones
 

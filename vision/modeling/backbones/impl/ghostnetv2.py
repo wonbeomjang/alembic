@@ -30,14 +30,22 @@ def _make_divisible(v, divisor, min_value=None):
 
 def hard_sigmoid(x, inplace: bool = False):
     if inplace:
-        return x.add_(3.).clamp_(0., 6.).div_(6.)
+        return x.add_(3.0).clamp_(0.0, 6.0).div_(6.0)
     else:
-        return F.relu6(x + 3.) / 6.
+        return F.relu6(x + 3.0) / 6.0
 
 
 class SqueezeExcite(nn.Module):
-    def __init__(self, in_chs, se_ratio=0.25, reduced_base_chs=None,
-                 act_layer=nn.ReLU, gate_fn=hard_sigmoid, divisor=4, **_):
+    def __init__(
+        self,
+        in_chs,
+        se_ratio=0.25,
+        reduced_base_chs=None,
+        act_layer=nn.ReLU,
+        gate_fn=hard_sigmoid,
+        divisor=4,
+        **_
+    ):
         super(SqueezeExcite, self).__init__()
         self.gate_fn = gate_fn
         reduced_chs = _make_divisible((reduced_base_chs or in_chs) * se_ratio, divisor)
@@ -56,10 +64,11 @@ class SqueezeExcite(nn.Module):
 
 
 class ConvBnAct(nn.Module):
-    def __init__(self, in_chs, out_chs, kernel_size,
-                 stride=1, act_layer=nn.ReLU):
+    def __init__(self, in_chs, out_chs, kernel_size, stride=1, act_layer=nn.ReLU):
         super(ConvBnAct, self).__init__()
-        self.conv = nn.Conv2d(in_chs, out_chs, kernel_size, stride, kernel_size // 2, bias=False)
+        self.conv = nn.Conv2d(
+            in_chs, out_chs, kernel_size, stride, kernel_size // 2, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(out_chs)
         self.act1 = act_layer(inplace=True)
 
@@ -71,81 +80,159 @@ class ConvBnAct(nn.Module):
 
 
 class GhostModuleV2(nn.Module):
-    def __init__(self, inp, oup, kernel_size=1, ratio=2, dw_size=3, stride=1, relu=True, mode=None, args=None):
+    def __init__(
+        self,
+        inp,
+        oup,
+        kernel_size=1,
+        ratio=2,
+        dw_size=3,
+        stride=1,
+        relu=True,
+        mode=None,
+        args=None,
+    ):
         super(GhostModuleV2, self).__init__()
         self.mode = mode
         self.gate_fn = nn.Sigmoid()
 
-        if self.mode in ['original']:
+        if self.mode in ["original"]:
             self.oup = oup
             init_channels = math.ceil(oup / ratio)
             new_channels = init_channels * (ratio - 1)
             self.primary_conv = nn.Sequential(
-                nn.Conv2d(inp, init_channels, kernel_size, stride, kernel_size // 2, bias=False),
+                nn.Conv2d(
+                    inp,
+                    init_channels,
+                    kernel_size,
+                    stride,
+                    kernel_size // 2,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(init_channels),
                 nn.ReLU(inplace=True) if relu else nn.Sequential(),
             )
             self.cheap_operation = nn.Sequential(
-                nn.Conv2d(init_channels, new_channels, dw_size, 1, dw_size // 2, groups=init_channels, bias=False),
+                nn.Conv2d(
+                    init_channels,
+                    new_channels,
+                    dw_size,
+                    1,
+                    dw_size // 2,
+                    groups=init_channels,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(new_channels),
                 nn.ReLU(inplace=True) if relu else nn.Sequential(),
             )
-        elif self.mode in ['attn']:
+        elif self.mode in ["attn"]:
             self.oup = oup
             init_channels = math.ceil(oup / ratio)
             new_channels = init_channels * (ratio - 1)
             self.primary_conv = nn.Sequential(
-                nn.Conv2d(inp, init_channels, kernel_size, stride, kernel_size // 2, bias=False),
+                nn.Conv2d(
+                    inp,
+                    init_channels,
+                    kernel_size,
+                    stride,
+                    kernel_size // 2,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(init_channels),
                 nn.ReLU(inplace=True) if relu else nn.Sequential(),
             )
             self.cheap_operation = nn.Sequential(
-                nn.Conv2d(init_channels, new_channels, dw_size, 1, dw_size // 2, groups=init_channels, bias=False),
+                nn.Conv2d(
+                    init_channels,
+                    new_channels,
+                    dw_size,
+                    1,
+                    dw_size // 2,
+                    groups=init_channels,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(new_channels),
                 nn.ReLU(inplace=True) if relu else nn.Sequential(),
             )
             self.short_conv = nn.Sequential(
                 nn.Conv2d(inp, oup, kernel_size, stride, kernel_size // 2, bias=False),
                 nn.BatchNorm2d(oup),
-                nn.Conv2d(oup, oup, kernel_size=(1, 5), stride=1, padding=(0, 2), groups=oup, bias=False),
+                nn.Conv2d(
+                    oup,
+                    oup,
+                    kernel_size=(1, 5),
+                    stride=1,
+                    padding=(0, 2),
+                    groups=oup,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(oup),
-                nn.Conv2d(oup, oup, kernel_size=(5, 1), stride=1, padding=(2, 0), groups=oup, bias=False),
+                nn.Conv2d(
+                    oup,
+                    oup,
+                    kernel_size=(5, 1),
+                    stride=1,
+                    padding=(2, 0),
+                    groups=oup,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(oup),
             )
 
     def forward(self, x):
-        if self.mode in ['original']:
+        if self.mode in ["original"]:
             x1 = self.primary_conv(x)
             x2 = self.cheap_operation(x1)
             out = torch.cat([x1, x2], dim=1)
-            return out[:, :self.oup, :, :]
-        elif self.mode in ['attn']:
+            return out[:, : self.oup, :, :]
+        elif self.mode in ["attn"]:
             res = self.short_conv(F.avg_pool2d(x, kernel_size=2, stride=2))
             x1 = self.primary_conv(x)
             x2 = self.cheap_operation(x1)
             out = torch.cat([x1, x2], dim=1)
-            return out[:, :self.oup, :, :] * F.interpolate(self.gate_fn(res), size=(out.shape[-2], out.shape[-1]),
-                                                           mode='nearest')
+            return out[:, : self.oup, :, :] * F.interpolate(
+                self.gate_fn(res), size=(out.shape[-2], out.shape[-1]), mode="nearest"
+            )
 
 
 class GhostBottleneckV2(nn.Module):
-
-    def __init__(self, in_chs, mid_chs, out_chs, dw_kernel_size=3,
-                 stride=1, act_layer=nn.ReLU, se_ratio=0., layer_id=None, args=None):
+    def __init__(
+        self,
+        in_chs,
+        mid_chs,
+        out_chs,
+        dw_kernel_size=3,
+        stride=1,
+        act_layer=nn.ReLU,
+        se_ratio=0.0,
+        layer_id=None,
+        args=None,
+    ):
         super(GhostBottleneckV2, self).__init__()
-        has_se = se_ratio is not None and se_ratio > 0.
+        has_se = se_ratio is not None and se_ratio > 0.0
         self.stride = stride
 
         # Point-wise expansion
         if layer_id <= 1:
-            self.ghost1 = GhostModuleV2(in_chs, mid_chs, relu=True, mode='original', args=args)
+            self.ghost1 = GhostModuleV2(
+                in_chs, mid_chs, relu=True, mode="original", args=args
+            )
         else:
-            self.ghost1 = GhostModuleV2(in_chs, mid_chs, relu=True, mode='attn', args=args)
+            self.ghost1 = GhostModuleV2(
+                in_chs, mid_chs, relu=True, mode="attn", args=args
+            )
 
             # Depth-wise convolution
         if self.stride > 1:
-            self.conv_dw = nn.Conv2d(mid_chs, mid_chs, dw_kernel_size, stride=stride,
-                                     padding=(dw_kernel_size - 1) // 2, groups=mid_chs, bias=False)
+            self.conv_dw = nn.Conv2d(
+                mid_chs,
+                mid_chs,
+                dw_kernel_size,
+                stride=stride,
+                padding=(dw_kernel_size - 1) // 2,
+                groups=mid_chs,
+                bias=False,
+            )
             self.bn_dw = nn.BatchNorm2d(mid_chs)
 
         # Squeeze-and-excitation
@@ -154,15 +241,24 @@ class GhostBottleneckV2(nn.Module):
         else:
             self.se = None
 
-        self.ghost2 = GhostModuleV2(mid_chs, out_chs, relu=False, mode='original', args=args)
+        self.ghost2 = GhostModuleV2(
+            mid_chs, out_chs, relu=False, mode="original", args=args
+        )
 
         # shortcut
-        if (in_chs == out_chs and self.stride == 1):
+        if in_chs == out_chs and self.stride == 1:
             self.shortcut = nn.Sequential()
         else:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
-                          padding=(dw_kernel_size - 1) // 2, groups=in_chs, bias=False),
+                nn.Conv2d(
+                    in_chs,
+                    in_chs,
+                    dw_kernel_size,
+                    stride=stride,
+                    padding=(dw_kernel_size - 1) // 2,
+                    groups=in_chs,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(in_chs),
                 nn.Conv2d(in_chs, out_chs, 1, stride=1, padding=0, bias=False),
                 nn.BatchNorm2d(out_chs),
@@ -182,7 +278,14 @@ class GhostBottleneckV2(nn.Module):
 
 
 class GhostNetV2(nn.Module):
-    def __init__(self, num_classes=1000, width=1.0, dropout=0.2, block=GhostBottleneckV2, args=None):
+    def __init__(
+        self,
+        num_classes=1000,
+        width=1.0,
+        dropout=0.2,
+        block=GhostBottleneckV2,
+        args=None,
+    ):
         super(GhostNetV2, self).__init__()
         self.cfgs = [
             # k, t, c, SE, s
@@ -192,18 +295,20 @@ class GhostNetV2(nn.Module):
             [[5, 72, 40, 0.25, 2]],
             [[5, 120, 40, 0.25, 1]],
             [[3, 240, 80, 0, 2]],
-            [[3, 200, 80, 0, 1],
-             [3, 184, 80, 0, 1],
-             [3, 184, 80, 0, 1],
-             [3, 480, 112, 0.25, 1],
-             [3, 672, 112, 0.25, 1]
-             ],
+            [
+                [3, 200, 80, 0, 1],
+                [3, 184, 80, 0, 1],
+                [3, 184, 80, 0, 1],
+                [3, 480, 112, 0.25, 1],
+                [3, 672, 112, 0.25, 1],
+            ],
             [[5, 672, 160, 0.25, 2]],
-            [[5, 960, 160, 0, 1],
-             [5, 960, 160, 0.25, 1],
-             [5, 960, 160, 0, 1],
-             [5, 960, 160, 0.25, 1]
-             ]
+            [
+                [5, 960, 160, 0, 1],
+                [5, 960, 160, 0.25, 1],
+                [5, 960, 160, 0, 1],
+                [5, 960, 160, 0.25, 1],
+            ],
         ]
         self.dropout = dropout
 
@@ -224,8 +329,18 @@ class GhostNetV2(nn.Module):
                 output_channel = _make_divisible(c * width, 4)
                 hidden_channel = _make_divisible(exp_size * width, 4)
                 if block == GhostBottleneckV2:
-                    layers.append(block(input_channel, hidden_channel, output_channel, k, s,
-                                        se_ratio=se_ratio, layer_id=layer_id, args=args))
+                    layers.append(
+                        block(
+                            input_channel,
+                            hidden_channel,
+                            output_channel,
+                            k,
+                            s,
+                            se_ratio=se_ratio,
+                            layer_id=layer_id,
+                            args=args,
+                        )
+                    )
                 input_channel = output_channel
                 layer_id += 1
             stages.append(nn.Sequential(*layers))
@@ -252,13 +367,15 @@ class GhostNetV2(nn.Module):
         x = self.conv_head(x)
         x = self.act2(x)
         x = x.view(x.size(0), -1)
-        if self.dropout > 0.:
+        if self.dropout > 0.0:
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.classifier(x)
         return x
 
 
-def _ghostnet(pretrained: bool = False, num_classes: int = 1000, width: float = 1.0, **kwargs):
+def _ghostnet(
+    pretrained: bool = False, num_classes: int = 1000, width: float = 1.0, **kwargs
+):
     net = GhostNetV2(num_classes=num_classes, width=width)
     if pretrained:
         state_dict = torch.hub.load_state_dict_from_url(state_dict_url[width])
@@ -267,15 +384,21 @@ def _ghostnet(pretrained: bool = False, num_classes: int = 1000, width: float = 
 
 
 @register_model
-def ghostnetv2_100(pretrained: bool = False, num_classes: int = 1000, **kwargs) -> GhostNetV2:
+def ghostnetv2_100(
+    pretrained: bool = False, num_classes: int = 1000, **kwargs
+) -> GhostNetV2:
     return _ghostnet(pretrained, num_classes, 1.0, **kwargs)
 
 
 @register_model
-def ghostnetv2_100(pretrained: bool = False, num_classes: int = 1000, **kwargs) -> GhostNetV2:
+def ghostnetv2_130(
+    pretrained: bool = False, num_classes: int = 1000, **kwargs
+) -> GhostNetV2:
     return _ghostnet(pretrained, num_classes, 1.3, **kwargs)
 
 
 @register_model
-def ghostnetv2_100(pretrained: bool = False, num_classes: int = 1000, **kwargs) -> GhostNetV2:
+def ghostnetv2_160(
+    pretrained: bool = False, num_classes: int = 1000, **kwargs
+) -> GhostNetV2:
     return _ghostnet(pretrained, num_classes, 1.6, **kwargs)

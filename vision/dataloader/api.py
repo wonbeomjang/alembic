@@ -1,7 +1,6 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from torch import nn
 from torch.utils.data import DataLoader
 
 from vision.configs import dataset

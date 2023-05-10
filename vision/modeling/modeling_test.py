@@ -34,7 +34,7 @@ class Test(parameterized.TestCase):
         self.assertEqual(5, len(result.keys()))
 
     @parameterized.parameters(*mobilenet.support_model)
-    def test_alembic_mobilenet(self, model_id):
+    def test_alembic_ghostnet(self, model_id):
         backbone_cfg = backbones.Backbone(type="alembic_ghostnet")
         backbone_cfg.alembic_mobilenet.model_id = model_id
 

@@ -4,8 +4,6 @@ from typing import Type
 import numpy as np
 
 import torch
-from torch import nn
-from torchvision.models.feature_extraction import create_feature_extractor
 
 
 class ReciproCAM:
@@ -56,9 +54,11 @@ class ReciproCAM:
                             score_map = r_feature_map * self.gaussian.repeat(
                                 num_channel, 1, 1
                             )
+                            # fmt: off
                             new_features[
-                                k, :, kx_s : kx_e + 1, ky_s : ky_e + 1
-                            ] = score_map[:, sx_s : sx_e + 1, sy_s : sy_e + 1]
+                                k, :, kx_s: kx_e + 1, ky_s: ky_e + 1
+                            ] = score_map[:, sx_s: sx_e + 1, sy_s: sy_e + 1]
+                            # fmt: on
 
         return new_features
 

@@ -1,6 +1,5 @@
 import dataclasses
-from typing import Optional, Union, Literal
-from torchvision.models._api import WeightsEnum  # type: ignore
+from typing import Optional
 from vision.configs.base_config import ModelConfig
 
 

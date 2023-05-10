@@ -1,4 +1,3 @@
-import torch.hub
 from torch import nn
 from torchvision.models._api import register_model  # type: ignore
 from torchvision.models import get_model, resnet
