@@ -6,12 +6,11 @@ from typing import List, Any, Set, Tuple, Dict
 import cv2
 import numpy as np
 from torch import Tensor
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import albumentations as A
 
 from vision.configs import dataset as dataset_config
 from vision.dataloader import register_dataloader
-from vision.dataloader.core import BaseDataset
 from vision.dataloader.utils import parse_augmentation
 
 
@@ -22,7 +21,7 @@ def imread_utf8(path: str):
     return cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
 
 
-class NeurocleClassificationDataset(BaseDataset):
+class NeurocleClassificationDataset(Dataset):
     def __init__(self, config: dataset_config.Dataset):
         self.labels = []
         label_set: str = "train" if config.is_train else "test"
@@ -60,7 +59,7 @@ class NeurocleClassificationDataset(BaseDataset):
     def __len__(self) -> int:
         return len(self.labels)
 
-    def get_num_classes(self) -> int:
+    def num_classes(self) -> int:
         return len(self.class_index)
 
 
@@ -74,12 +73,12 @@ def neurocle_classification(config: dataset_config.Dataset):
         batch_size=config.batch_size,
         shuffle=config.shuffle,
         num_workers=config.num_workers,
-        # pin_memory=config.pin_memory,
-        # drop_last=config.drop_last,
-        # timeout=config.timeout,
-        # prefetch_factor=config.prefetch_factor,
-        # persistent_workers=config.persistent_workers,
-        # pin_memory_device=config.pin_memory_device,
+        pin_memory=config.pin_memory,
+        drop_last=config.drop_last,
+        timeout=config.timeout,
+        prefetch_factor=config.prefetch_factor,
+        persistent_workers=config.persistent_workers,
+        pin_memory_device=config.pin_memory_device,
     )
 
     return dataloader
