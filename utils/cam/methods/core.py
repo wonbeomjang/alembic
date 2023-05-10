@@ -1,10 +1,5 @@
-# Copyright (C) 2020-2023, François-Guillaume Fernandez.
-
-# This program is licensed under the Apache License 2.0.
-# See LICENSE or go to <https://www.apache.org/licenses/LICENSE-2.0> for full license details.
-
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from functools import partial
 from types import TracebackType
 from typing import Any, List, Optional, Tuple, Type, Union, cast, Dict
@@ -18,7 +13,7 @@ from ._utils import locate_candidate_layer
 __all__ = ["_CAM"]
 
 
-class _CAM:
+class _CAM(metaclass=ABCMeta):
     """Implements a class activation map extractor
 
     Args:
@@ -98,9 +93,9 @@ class _CAM:
 
     def __exit__(
         self,
-        exct_type: Type[BaseException],
-        exce_value: BaseException,
-        traceback: TracebackType,
+        exct_type: Optional[Type[BaseException]],
+        exce_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> None:
         self.remove_hooks()
         self.reset_hooks()

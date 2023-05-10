@@ -61,7 +61,7 @@ def get_dataset_builder(name: str) -> Callable[..., DataLoader]:
     return fn
 
 
-def get_dataloader(dataset_cfg: dataset, **config: Any) -> DataLoader:
+def get_dataloader(dataset_cfg: dataset.Dataset, **config: Any) -> DataLoader:
     """
     Gets the model name and configuration and returns an instantiated model.
 
