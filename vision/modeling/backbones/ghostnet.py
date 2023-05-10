@@ -19,6 +19,7 @@ _ghostnet_return_nodes = {
     "blocks.6": "3",
     "blocks.9": "4",
 }
+
 _load_weight_type = {
     "all": "blocks.9",
     "half": "blocks.4",
@@ -28,6 +29,9 @@ support_model = [
     "ghostnet_050",
     "ghostnet_100",
     "ghostnet_130",
+    "ghostnetv2_100",
+    "ghostnetv2_130",
+    "ghostnetv2_160",
 ]
 
 

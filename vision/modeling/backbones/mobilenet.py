@@ -60,7 +60,7 @@ def alembic_mobilenet(
     :return: feature extraction model
     """
     assert backbone_cfg.type == "alembic_mobilenet"
-    assert backbone_cfg.alembic_ghostnet.model_id in support_model
+    assert backbone_cfg.alembic_mobilenet.model_id in support_model
 
     if backbone_cfg.pretrained:
         weight = _weight_dict[backbone_cfg.alembic_mobilenet.model_id]

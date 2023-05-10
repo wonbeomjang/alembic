@@ -1,3 +1,4 @@
+import torch.hub
 from torch import nn
 from torchvision.models._api import register_model  # type: ignore
 from torchvision.models import get_model, resnet
@@ -63,10 +64,9 @@ def alembic_resnet(
     assert backbone_cfg.alembic_resnet.model_id in support_model
 
     if backbone_cfg.pretrained:
-        weight = _weight_dict[backbone_cfg.alembic_mobilenet.model_id]
+        weight = _weight_dict[backbone_cfg.alembic_resnet.model_id]
     else:
         weight = None
-
     model = get_model(
         backbone_cfg.alembic_resnet.model_id,
         weights=weight,

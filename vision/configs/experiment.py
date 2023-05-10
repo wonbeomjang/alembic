@@ -181,13 +181,13 @@ def neurocle_cla_led():
     image_size: Tuple[int, int, int] = (3, 256, 256)
     batch_size: int = 256
     num_workers: int = 16
-    learning_rate: float = 5e-4
+    learning_rate: float = 1e-4
 
     base_dir = os.path.join("..", "datasets", "neurocle_cla")
     log_dir = "led"
 
-    # base_dir = "/app/input/dataset/classification"
-    # log_dir = "/app/outputs"
+    base_dir = "/app/input/dataset/classification"
+    log_dir = "/app/outputs"
     image_dir = os.path.join(base_dir, "led", "image")
     label_path = os.path.join(base_dir, "led", "label.json")
 
@@ -221,8 +221,8 @@ def neurocle_cla_geometric_aug_base(
         classification=ClassificationTrainer(
             classification_model=ClassificationModel(
                 backbone=backbones.Backbone(
-                    type="alembic_mobilenet",
-                    pretrained=False,
+                    type="alembic_resnet",
+                    pretrained=True,
                 )
             ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
