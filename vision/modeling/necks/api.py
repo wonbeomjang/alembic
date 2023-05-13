@@ -9,7 +9,7 @@ M = TypeVar("M", bound=nn.Module)
 BUILTIN_MODELS = {}
 
 
-def register_model(
+def register_neck(
     name: Optional[str] = None,
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
@@ -41,7 +41,7 @@ def list_model(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_model_builder(name: str) -> Callable[..., nn.Module]:
+def get_neck_builder(name: str) -> Callable[..., nn.Module]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,16 +59,16 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_model(neck_config, **config: Any) -> nn.Module:
+def get_neck(model_cfg, **config: Any) -> nn.Module:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        neck_config (ModelConfig): config of the model
+        model_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_model_builder(neck_config.type)
-    return fn(neck_config, **config)
+    fn = get_neck_builder(model_cfg.type)
+    return fn(model_cfg, **config)

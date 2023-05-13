@@ -11,7 +11,7 @@ __all__ = [
 ]
 
 _torchvision_return_nodes = {
-    "maxpool": "0",
+    "relu": "0",
     "layer1": "1",
     "layer2": "2",
     "layer3": "3",
