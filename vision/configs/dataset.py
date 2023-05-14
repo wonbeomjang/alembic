@@ -109,3 +109,5 @@ class Dataset:
     pin_memory_device: str = ""
 
     augmentation: Augmentation = Augmentation()
+
+    max_objects: int = 100

@@ -51,12 +51,12 @@ def dog_vs_cat_classification_resnet():
             num_workers=num_workers,
             augmentation=Augmentation(
                 aug_list=[
-                    ("LongestMaxSize", {"max_size": image_size}),
+                    ("LongestMaxSize", {"max_size": max(image_size)}),
                     (
                         "PadIfNeeded",
                         {
-                            "min_height": image_size,
-                            "min_width": image_size,
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
                             "border_mode": cv2.BORDER_CONSTANT,
                         },
                     ),
@@ -80,12 +80,12 @@ def dog_vs_cat_classification_resnet():
             num_workers=num_workers,
             augmentation=Augmentation(
                 aug_list=[
-                    ("LongestMaxSize", {"max_size": image_size}),
+                    ("LongestMaxSize", {"max_size": max(image_size)}),
                     (
                         "PadIfNeeded",
                         {
-                            "min_height": image_size,
-                            "min_width": image_size,
+                            "min_height": image_size[1],
+                            "min_width": image_size[2],
                             "border_mode": cv2.BORDER_CONSTANT,
                         },
                     ),
