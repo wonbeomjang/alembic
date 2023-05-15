@@ -8,6 +8,7 @@ def parse_augmentation(aug_config: dataset_config.Augmentation) -> A.Compose:
     compose_list = []
 
     for aug, kwargs in aug_config.aug_list:
+        A.LongestMaxSize
         compose_list += [getattr(A, aug)(**kwargs)]
 
     compose_list += [ToTensorV2()]

@@ -29,7 +29,6 @@ class ClassificationModel(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.backbone(x)[self.max_key]
-        x = x.detach()
         x = self.header(x)
 
         return x
