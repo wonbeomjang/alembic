@@ -23,7 +23,7 @@ class FPN(nn.Module):
             )
 
     def forward(self, x: Dict[str, Tensor]):
-        output = {}
+        output = OrderedDict()
 
         for pyramid_level in range(
             self.config.fpn.min_level, self.config.fpn.max_level + 1

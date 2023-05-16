@@ -67,8 +67,8 @@ class Test(parameterized.TestCase):
         for pyramid_level in range(
             yolo_cfg.head.yolo.min_level, yolo_cfg.head.yolo.max_level + 1
         ):
-            self.assertEqual(result[str(pyramid_level)]["boxes"].size(1), 4)
-            self.assertEqual(result[str(pyramid_level)]["background"].size(1), 1)
+            self.assertEqual(result[str(pyramid_level)]["boxes"].size(2), 4)
+            self.assertEqual(result[str(pyramid_level)]["background"].size(2), 1)
             self.assertEqual(
-                result[str(pyramid_level)]["classes"].size(1), yolo_cfg.head.num_classes
+                result[str(pyramid_level)]["classes"].size(2), yolo_cfg.head.num_classes
             )
