@@ -16,7 +16,7 @@ def parse_augmentation(
     if bbox:
         transform = A.Compose(
             compose_list,
-            bbox_params=A.BboxParams(format="coco", label_fields=["categories"]),
+            bbox_params=A.BboxParams(format="coco", label_fields=["labels"]),
         )
     else:
         transform = A.Compose(compose_list)

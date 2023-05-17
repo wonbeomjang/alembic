@@ -49,20 +49,17 @@ class COCODataset(BaseDataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
 
         result["image"] = image
-        result["bboxes"] = boxes
-        result["categories"] = categories
+        result["bboxes"] = np.array(boxes)
+        result["labels"] = categories
 
         result = self.transforms(**result)
 
-        result["bboxes"] += [[-1, -1, -1, -1]] * (
-            self.max_objects - len(result["bboxes"])
-        )
-        result["categories"] += [-1] * (self.max_objects - len(result["categories"]))
+        out = {
+            "boxes": np.array(result["bboxes"]),
+            "labels": np.array(result["bboxes"]),
+        }
 
-        result["bboxes"] = np.array(result["bboxes"])
-        result["categories"] = np.array(result["categories"])
-
-        return result
+        return out
 
     def __len__(self) -> int:
         return len(self.coco.getImgIds())
