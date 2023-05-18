@@ -1,12 +1,15 @@
 import numpy as np
 import os.path
-from typing import Dict
+from typing import Dict, Tuple
 
+import torch
 from torch import Tensor
 import albumentations as A
 from pycocotools.coco import COCO
 import cv2
 from torch.utils.data import DataLoader
+from torchvision.ops import box_convert
+
 
 from vision.configs import dataset as dataset_config
 from vision.dataloader import register_dataloader
@@ -26,7 +29,7 @@ class COCODataset(BaseDataset):
             aug_config=config.augmentation, bbox=True
         )
 
-    def __getitem__(self, i) -> Dict[str, Tensor]:
+    def __getitem__(self, i) -> Tuple[Tensor, Dict[str, Tensor]]:
         result = {}
         image_id = self.image_ids[i]
         image_info = self.coco.loadImgs(image_id)[0]
@@ -55,17 +58,24 @@ class COCODataset(BaseDataset):
         result = self.transforms(**result)
 
         out = {
-            "boxes": np.array(result["bboxes"]),
-            "labels": np.array(result["bboxes"]),
+            "boxes": torch.Tensor(result["bboxes"]),
+            "labels": torch.Tensor(result["labels"]).int(),
         }
 
-        return out
+        if len(out["boxes"]):
+            out["boxes"] = box_convert(out["boxes"], in_fmt="xywh", out_fmt="xyxy")
+
+        return result["image"], out
 
     def __len__(self) -> int:
         return len(self.coco.getImgIds())
 
     def get_num_classes(self) -> int:
         return len(self.coco.getCatIds())
+
+
+def collate_fn(batch):
+    return tuple(zip(*batch))
 
 
 @register_dataloader("coco")
@@ -78,6 +88,7 @@ def coco_dataloader(config: dataset_config.Dataset):
         batch_size=config.batch_size,
         shuffle=config.shuffle,
         num_workers=config.num_workers,
+        collate_fn=collate_fn,
         # pin_memory=config.pin_memory,
         # drop_last=config.drop_last,
         # timeout=config.timeout,
