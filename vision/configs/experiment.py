@@ -1,7 +1,7 @@
 import os.path
-from typing import Tuple
+from typing import Tuple, Callable, Sequence, Dict, Any
 
-from vision.configs import register_experiment_config
+from vision.configs import register_experiment_config, backbones
 from vision.configs.classification import ClassificationModel
 from vision.configs.dataset import (
     Dataset,
@@ -64,4 +64,87 @@ def dog_vs_cat_classification_resnet():
         ),
     )
 
+    return exp_config
+
+
+@register_experiment_config("neurocle_cla_led")
+def neurocle_cla_led():
+    epochs: int = 100
+    image_size: Tuple[int, int, int] = (3, 256, 256)
+    batch_size: int = 256
+    num_workers: int = 16
+    learning_rate: float = 1e-4
+
+    base_dir = os.path.join("..", "datasets", "neurocle_cla")
+    log_dir = "led"
+
+    # base_dir = "/app/input/dataset/classification"
+    # log_dir = "/app/outputs"
+    image_dir = os.path.join(base_dir, "led", "image")
+    label_path = os.path.join(base_dir, "led", "label.json")
+
+    return neurocle_cla_base(
+        batch_size,
+        epochs,
+        image_dir,
+        image_size,
+        label_path,
+        learning_rate,
+        log_dir,
+        num_workers,
+        AugPolicy.geometric_aug,
+        AugPolicy.val_aug,
+    )
+
+
+def neurocle_cla_base(
+    batch_size: int,
+    epochs: int,
+    image_dir: str,
+    image_size: Tuple[int, int, int],
+    label_path: str,
+    learning_rate: float,
+    log_dir: str,
+    num_workers: int,
+    train_aug: Callable[[Tuple[int, int, int]], Sequence[Tuple[str, Dict[str, Any]]]],
+    val_aug: Callable[[Tuple[int, int, int]], Sequence[Tuple[str, Dict[str, Any]]]],
+):
+    exp_config = Trainer(
+        type="classification",
+        logger="tensorboard",
+        log_dir=log_dir,
+        save_best_model=True,
+        classification=ClassificationTrainer(
+            classification_model=ClassificationModel(
+                backbone=backbones.Backbone(
+                    type="alembic_resnet",
+                    pretrained=True,
+                )
+            ),
+            optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
+            loss=Loss(
+                type="cross_entropy_loss",
+                cross_entropy_loss=CrossEntropyLoss(),
+            ),
+        ),
+        epochs=epochs,
+        train_data=Dataset(
+            type="neurocle_classification",
+            image_dir=image_dir,
+            label_path=label_path,
+            is_train=True,
+            image_size=image_size,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            augmentation=Augmentation(aug_list=train_aug(image_size)),
+        ),
+        val_data=Dataset(
+            type="neurocle_classification",
+            image_dir=image_dir,
+            label_path=label_path,
+            is_train=False,
+            augmentation=Augmentation(aug_list=val_aug(image_size)),
+        ),
+    )
     return exp_config
