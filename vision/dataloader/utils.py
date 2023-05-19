@@ -1,7 +1,28 @@
+from typing import Sequence, List
+
 import albumentations as A
+from albumentations import BoxType
+from albumentations.core.bbox_utils import (
+    BboxProcessor,
+    convert_bboxes_to_albumentations,
+)
 from albumentations.pytorch import ToTensorV2
 
 from vision.configs import dataset as dataset_config
+
+ALBUMENTATION_CHECK_VALIDITY = False
+
+
+if ALBUMENTATION_CHECK_VALIDITY:
+
+    def _convert_to_albumentations(
+        self, data: Sequence[BoxType], rows: int, cols: int
+    ) -> List[BoxType]:
+        return convert_bboxes_to_albumentations(
+            data, self.params.format, rows, cols, check_validity=False
+        )
+
+    BboxProcessor.convert_to_albumentations = _convert_to_albumentations
 
 
 def parse_augmentation(

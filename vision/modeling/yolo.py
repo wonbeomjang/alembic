@@ -1,7 +1,8 @@
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, TypeVar, Tuple
 
 import torch
 from torch import nn, Tensor
+from torch.nn import Module
 
 from vision.configs import yolo as yolo_cfg
 
@@ -11,6 +12,8 @@ from vision.modeling.backbones import get_backbone
 from vision.modeling.head import get_head
 from vision.modeling.necks import get_neck
 from vision.utils.anchor import AnchorGenerator
+
+T = TypeVar("T", bound="Module")
 
 
 class YOLO(nn.Module):
@@ -37,11 +40,18 @@ class YOLO(nn.Module):
             anchor_generator = AnchorGenerator()
         self.anchor_generator = anchor_generator
         self.anchor: Optional[List[Tensor]] = None
+        self.is_train = True
 
-    def forward(self, x: Tensor) -> Dict[str, Dict[str, Tensor]]:
+    def forward(self, x: Tuple[Tensor]) -> Dict[str, Dict[str, Tensor]]:
+        x = torch.stack(x)
+
         feature = self.backbone(x)
         feature = self.neck(feature)
-        self.anchor = self.anchor_generator(x, feature)
+        if self.training:
+            self.anchor = self.anchor_generator(x, feature)
+        else:
+            self.anchor = None
+
         x = self.head(feature)
         return x
 

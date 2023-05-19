@@ -120,11 +120,11 @@ class AnchorGenerator(nn.Module):
         return anchors
 
     def forward(
-        self, image_list: Tensor, feature_maps: Dict[str, Tensor]
+        self, image_list: List[Tensor], feature_maps: Dict[str, Tensor]
     ) -> List[Tensor]:
         min_key = min(feature_maps.keys())
         grid_sizes = [feature_map.shape[-2:] for feature_map in feature_maps.values()]
-        image_size = image_list.shape[-2:]
+        image_size = image_list[0].shape[-2:]
 
         dtype, device = feature_maps[min_key].dtype, feature_maps[min_key].device
         strides = [

@@ -64,6 +64,8 @@ class COCODataset(BaseDataset):
 
         if len(out["boxes"]):
             out["boxes"] = box_convert(out["boxes"], in_fmt="xywh", out_fmt="xyxy")
+        else:
+            out["boxes"] = torch.zeros([0, 4], dtype=torch.float32)
 
         return result["image"], out
 
