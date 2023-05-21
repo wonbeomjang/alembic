@@ -12,11 +12,11 @@ class YOLOHead(nn.Module):
         super().__init__()
         self.upsample = nn.Upsample(scale_factor=2)
         self.num_anchors = len(config.yolo.ratios) * len(config.yolo.scales)
-        self.min_level = config.yolo.min_level
-        self.max_level = config.yolo.max_level
+        self.min_level = config.yolo._min_level
+        self.max_level = config.yolo._max_level
 
         head = {}
-        for pyramid_level in range(config.yolo.min_level, config.yolo.max_level + 1):
+        for pyramid_level in range(config.yolo._min_level, config.yolo._max_level + 1):
             _head = []
             for i in range(config.yolo.num_blocks - 1):
                 _head += [
@@ -26,8 +26,9 @@ class YOLOHead(nn.Module):
             _head += [
                 nn.Conv2d(
                     config.yolo.num_channels,
-                    self.num_anchors * (4 + 1 + config.num_classes),
+                    self.num_anchors * (4 + 1 + config._num_classes),
                     3,
+                    1,
                     1,
                 )
             ]
@@ -40,13 +41,11 @@ class YOLOHead(nn.Module):
 
         for pyramid_level in range(self.min_level, self.max_level + 1):
             res = self.head[str(pyramid_level)](x[str(pyramid_level)])
-            n, _, h, w = res.shape
+            n, _, w, h = res.shape
+            res = res.reshape(n, self.num_anchors, w, h, -1)
 
-            res = res.reshape(n, self.num_anchors, -1, h, w)
-
-            output[str(pyramid_level)]["boxes"] = res[:, :, :4, :, :]
-            output[str(pyramid_level)]["background"] = res[:, :, 4:5, :, :]
-            output[str(pyramid_level)]["classes"] = res[:, :, 5:, :, :]
+            output[str(pyramid_level)]["boxes"] = res[:, :, :, :, :4]
+            output[str(pyramid_level)]["labels"] = res[:, :, :, :, 4:]
 
         return output
 

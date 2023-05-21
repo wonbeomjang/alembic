@@ -9,11 +9,23 @@ from vision.configs.base_config import ModelConfig
 class YOLO(ModelConfig):
     """ResNet config."""
 
-    type: Optional[str] = "yolo"
     backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")
     neck: necks.Neck = necks.Neck(type="fpn")
     head: heads.Head = heads.Head(type="yolo")
 
+    fg_iou_thresh: float = 0.5
+    bg_iou_thresh: float = 0.4
+
     head.yolo.num_channels = neck.fpn.num_channels
-    head.yolo.min_level = neck.fpn.min_level
-    head.yolo.max_level = neck.fpn.max_level
+    head.yolo._min_level = neck.fpn.min_level
+    head.yolo._max_level = neck.fpn.max_level
+
+
+@dataclasses.dataclass
+class DetectionModel(ModelConfig):
+    type: Optional[str] = None
+    num_classes: int = 80
+
+    yolo: YOLO = YOLO()
+
+    yolo.head._num_classes = num_classes

@@ -6,7 +6,7 @@ from torch import Tensor
 
 from vision.configs import backbones
 from vision.configs import classification
-from vision.configs import yolo
+from vision.configs import detectionmodel
 from vision.modeling.backbones import get_backbone as get_backbone_model
 from vision.modeling import get_model
 
@@ -59,16 +59,17 @@ class Test(parameterized.TestCase):
         self.assertEqual(result.shape, torch.Size([1, 1000]))
 
         # test yolo
-        yolo_cfg = yolo.YOLO()
+        yolo_cfg = detectionmodel.YOLO()
         yolo_cfg.backbone = backbone_cfg
 
         model = get_model(yolo_cfg).to(device)
         result: Dict[str, Dict[str, Tensor]] = model(torch.randn(1, 3, 256, 256))
         for pyramid_level in range(
-            yolo_cfg.head.yolo.min_level, yolo_cfg.head.yolo.max_level + 1
+            yolo_cfg.head.yolo._min_level, yolo_cfg.head.yolo._max_level + 1
         ):
             self.assertEqual(result[str(pyramid_level)]["boxes"].size(2), 4)
             self.assertEqual(result[str(pyramid_level)]["background"].size(2), 1)
             self.assertEqual(
-                result[str(pyramid_level)]["classes"].size(2), yolo_cfg.head.num_classes
+                result[str(pyramid_level)]["classes"].size(2),
+                yolo_cfg.head._num_classes,
             )

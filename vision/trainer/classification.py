@@ -16,7 +16,7 @@ from torchvision.transforms.functional import to_pil_image, to_tensor
 
 from utils.cam.methods import GradCAMpp, CAM, ReciproCAM
 from utils.cam.uitls import overlay_mask
-from vision.configs import trainer as trainer_config
+from vision.configs import task as trainer_config
 from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
 from vision.lr_scheduler import get_lr_scheduler
@@ -32,7 +32,7 @@ STD = torch.unsqueeze(torch.unsqueeze(torch.Tensor((0.229, 0.224, 0.225)), -1), 
 
 
 class ClassificationTask(lightning.LightningModule):
-    def __init__(self, config: trainer_config.ClassificationTrainer):
+    def __init__(self, config: trainer_config.ClassificationTask):
         super().__init__()
         self.config = config
 

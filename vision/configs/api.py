@@ -1,7 +1,7 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from vision.configs.trainer import Trainer
+from vision.configs.task import Trainer
 
 
 M = TypeVar("M", bound=Trainer)

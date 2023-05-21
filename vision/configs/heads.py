@@ -7,8 +7,8 @@ class YOLO:
     num_blocks: int = 1
     num_channels: Optional[int] = None
 
-    min_level: Optional[int] = None
-    max_level: Optional[int] = None
+    _min_level: Optional[int] = None
+    _max_level: Optional[int] = None
 
     ratios: Tuple[float, float, float] = (0.5, 1.0, 1.5)
     scales: Tuple[float, float, float] = (
@@ -21,5 +21,5 @@ class YOLO:
 @dataclasses.dataclass
 class Head:
     type: Optional[str] = None
-    num_classes: int = 80
+    _num_classes: Optional[int] = None
     yolo: YOLO = YOLO()

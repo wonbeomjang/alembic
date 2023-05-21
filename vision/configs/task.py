@@ -11,10 +11,11 @@ from vision.configs.loss import Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer
 from vision.configs.dataset import Dataset
+from vision.configs.detectionmodel import DetectionModel
 
 
 @dataclasses.dataclass
-class ClassificationTrainer:
+class ClassificationTask:
     classification_model: ClassificationModel = ClassificationModel()
     total_steps: Optional[int] = None
     optimizer: Optimizer = Optimizer(type="adam")
@@ -24,9 +25,20 @@ class ClassificationTrainer:
 
 
 @dataclasses.dataclass
+class DetectionTask:
+    detection_model: DetectionModel = DetectionModel()
+    total_steps: Optional[int] = None
+    optimizer: Optimizer = Optimizer(type="adam")
+    lr_scheduler: Optional[LRScheduler] = None
+    loss: Loss = Loss(type="yolo_v4_loss")
+
+
+@dataclasses.dataclass
 class Trainer:
     type: Optional[str] = None
-    classification: ClassificationTrainer = ClassificationTrainer()
+    classification: ClassificationTask = ClassificationTask()
+    detection: DetectionTask = DetectionTask()
+
     epochs: int = 0
     train_data: Dataset = Dataset()
     val_data: Optional[Dataset] = None

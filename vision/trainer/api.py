@@ -3,7 +3,7 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from lightning import LightningModule
 
-from vision.configs.trainer import Trainer
+from vision.configs.task import Trainer
 from vision.trainer._trainer import BasicTrainer
 
 M = TypeVar("M", bound=LightningModule)

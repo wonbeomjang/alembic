@@ -1,5 +1,10 @@
 import dataclasses
-from typing import Optional
+
+try:
+    from typing_extensions import Literal
+    from typing import Optional
+except ModuleNotFoundError:
+    from typing import Optional, Literal
 
 from torch import Tensor
 
@@ -15,6 +20,14 @@ class CrossEntropyLoss:
 
 
 @dataclasses.dataclass
+class YOLOv4Loss:
+    bg_iou_thresh: float = 0.4
+    fg_iou_thresh: float = 0.5
+    bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"] = "ciou"
+
+
+@dataclasses.dataclass
 class Loss:
     type: Optional[str] = None
     cross_entropy_loss: CrossEntropyLoss = CrossEntropyLoss()
+    yolo_v4_loss: YOLOv4Loss = YOLOv4Loss()
