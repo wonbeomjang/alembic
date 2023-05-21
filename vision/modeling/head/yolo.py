@@ -15,7 +15,7 @@ class YOLOHead(nn.Module):
         self.min_level = config.yolo._min_level
         self.max_level = config.yolo._max_level
 
-        head = {}
+        self.head = nn.ModuleDict()
         for pyramid_level in range(config.yolo._min_level, config.yolo._max_level + 1):
             _head = []
             for i in range(config.yolo.num_blocks - 1):
@@ -33,8 +33,7 @@ class YOLOHead(nn.Module):
                 )
             ]
 
-            head[str(pyramid_level)] = nn.Sequential(*_head)
-        self.head = head
+            self.head[str(pyramid_level)] = nn.Sequential(*_head)
 
     def forward(self, x: Dict[str, Tensor]):
         output = defaultdict(dict)

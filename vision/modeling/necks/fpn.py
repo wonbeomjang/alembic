@@ -11,7 +11,7 @@ class FPN(nn.Module):
     def __init__(self, config: neck_config.Neck):
         super().__init__()
         self.config = config
-        self.blocks = OrderedDict()
+        self.blocks = nn.ModuleDict()
         self.upsample = nn.Upsample(scale_factor=2)
         for pyramid_level in range(config.fpn.max_level, config.fpn.min_level - 1, -1):
             self.blocks[str(pyramid_level)] = nn.Conv2d(

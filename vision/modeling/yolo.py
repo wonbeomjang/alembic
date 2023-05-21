@@ -1,4 +1,4 @@
-from typing import Dict, Optional, TypeVar, Tuple
+from typing import Dict, Optional, Tuple
 
 import torch
 from torch import nn, Tensor
@@ -11,8 +11,6 @@ from vision.modeling.backbones import get_backbone
 from vision.modeling.head import get_head
 from vision.modeling.necks import get_neck
 from vision.utils.anchor import AnchorGenerator
-
-T = TypeVar("T", bound="nn.Module")
 
 
 class YOLO(nn.Module):
