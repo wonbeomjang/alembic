@@ -106,7 +106,7 @@ def coco_yolo():
     batch_size: int = 2
     num_workers: int = 4
     learning_rate: float = 1e-4
-    num_classes: int = 80
+    num_classes: int = 91 + 1
 
     exp_config = Trainer(
         type="detection",

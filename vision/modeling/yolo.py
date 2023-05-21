@@ -31,6 +31,8 @@ class YOLO(nn.Module):
             in_channels[k] = output[k].size(1)
 
         model_config.neck.fpn.in_channels = in_channels
+        model_config.head.yolo._min_level = model_config.neck.fpn.min_level
+        model_config.head.yolo._max_level = model_config.neck.fpn.max_level
 
         self.neck = get_neck(model_config.neck)
         self.head = get_head(model_config.head)
@@ -57,9 +59,12 @@ class YOLO(nn.Module):
 @register_model("yolo")
 def yolo(model_cfg: ModelConfig):
     assert isinstance(model_cfg, yolo_cfg.DetectionModel)
-    assert model_cfg.yolo.head.yolo._min_level == model_cfg.yolo.neck.fpn.min_level
-    assert model_cfg.yolo.head.yolo._max_level == model_cfg.yolo.neck.fpn.max_level
-    assert model_cfg.num_classes == model_cfg.yolo.head._num_classes
+    if model_cfg.yolo.head.yolo._min_level != model_cfg.yolo.neck.fpn.min_level:
+        model_cfg.yolo.head.yolo._min_level = model_cfg.yolo.neck.fpn.min_level
+    if model_cfg.yolo.head.yolo._max_level != model_cfg.yolo.neck.fpn.max_level:
+        model_cfg.yolo.head.yolo._max_level = model_cfg.yolo.neck.fpn.max_level
+    if model_cfg.num_classes != model_cfg.yolo.head._num_classes:
+        model_cfg.num_classes = model_cfg.yolo.head._num_classes
 
     model = YOLO(model_cfg.yolo)
 

@@ -17,8 +17,6 @@ class YOLO(ModelConfig):
     bg_iou_thresh: float = 0.4
 
     head.yolo.num_channels = neck.fpn.num_channels
-    head.yolo._min_level = neck.fpn.min_level
-    head.yolo._max_level = neck.fpn.max_level
 
 
 @dataclasses.dataclass
