@@ -1,8 +1,9 @@
 import os.path
 import time
-from typing import Any, Union, Tuple, List, Dict
+from typing import Any, Union, Tuple, List, Dict, Optional
 
 import lightning
+import torch
 from lightning import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -19,21 +20,27 @@ from vision.loss import get_loss
 from vision.optimizer import get_optimizer
 from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
+from vision.utils.coco import COCOEval
 
 
 class DetectionTask(lightning.LightningModule):
-    def __init__(self, config: trainer_config.DetectionTask):
+    def __init__(
+        self, config: trainer_config.DetectionTask, coco_eval: Optional[COCOEval] = None
+    ):
         super().__init__()
         self.config = config
+        self.coco_eval = coco_eval
 
         self.model: nn.Module = get_model(config.detection_model)
-        self.criterion: nn.Module = get_loss(config.loss)
+        self.criterion: nn.Module = get_loss(
+            config.loss, box_coder=self.model.box_coder
+        )
 
     def forward(self, x, *args: Any, **kwargs: Any) -> Any:
         return self.model(x, *args, **kwargs)
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
-        images, labels = batch
+        images, labels, _ = batch
         preds = self(images)
 
         loss = self.criterion(preds, labels, self.model.anchor)
@@ -44,9 +51,10 @@ class DetectionTask(lightning.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, image_ids = batch
+
         cur_time = time.time_ns()
-        preds = self(images)
+        preds, result = self(images)
         inference_time = (time.time_ns() - cur_time) / 1_000_000
 
         loss = self.criterion(preds, labels, self.model.anchor)
@@ -57,23 +65,33 @@ class DetectionTask(lightning.LightningModule):
 
         self.log_dict(metrics)
 
+        if self.coco_eval is not None:
+            num_images = len(images)
+
+            for i in range(num_images):
+                image_id = torch.full_like(result[i]["category_ids"], image_ids[i])
+                self.coco_eval.update_dt(
+                    image_id,
+                    result[i]["category_ids"],
+                    result[i]["bboxes"],
+                    result[i]["scores"],
+                )
+
     def test_step(self, batch, batch_idx):
-        images, labels = batch
-        preds = self(images)
-
-        loss = self.criterion(preds, labels)
-
-        metrics = {"test_loss": loss}
-        self.log_dict(metrics)
+        self.validation_step(batch, batch_idx)
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         return self(batch)
 
     def on_train_epoch_end(self) -> None:
-        super().on_train_epoch_end()
         lr_scheduler = self.lr_schedulers()
         if isinstance(lr_scheduler, optim.lr_scheduler._LRScheduler):
             self.log_dict({"lr": lr_scheduler.get_last_lr()[0]})
+        super().on_train_epoch_end()
+
+    def on_validation_end(self) -> None:
+        self.coco_eval.eval()
+        super().on_validation_end()
 
     def configure_optimizers(
         self,
@@ -100,6 +118,7 @@ class DetectionTrainer(BasicTrainer):
     def __init__(self, config: trainer_config.Trainer):
         self.config = config
         logger = None
+        coco_eval = None
         checkpoint_callback = []
         if self.config.logger == "tensorboard":
             logger = TensorBoardLogger(save_dir=self.config.log_dir)
@@ -115,6 +134,10 @@ class DetectionTrainer(BasicTrainer):
             ]
 
         self.train_loader = get_dataloader(self.config.train_data)
+        if self.config.val_data is not None:
+            self.val_loader = get_dataloader(self.config.val_data)
+            coco_eval = COCOEval(self.val_loader.dataset.label_path)
+
         step_per_epochs = len(self.train_loader)
 
         if self.config.detection.total_steps is None:
@@ -125,7 +148,7 @@ class DetectionTrainer(BasicTrainer):
                 self.train_loader.dataset.get_num_classes() + 1
             )
 
-        self.model = DetectionTask(self.config.detection)
+        self.model = DetectionTask(self.config.detection, coco_eval)
 
         last_path = os.path.join(config.log_dir, "last.ckpt")
         if os.path.exists(last_path):
@@ -138,13 +161,11 @@ class DetectionTrainer(BasicTrainer):
             log_every_n_steps=step_per_epochs,
         )
 
-        if self.config.val_data is not None:
-            self.val_loader = get_dataloader(self.config.val_data)
-        else:
-            self.val_loader = None
-
     def train(self):
         self.trainer.fit(self.model, self.train_loader, ckpt_path=self.config.ckpt)
+
+    def eval(self):
+        self.trainer.test(self.model, self.val_loader, ckpt_path=self.config.ckpt)
 
     def train_and_eval(self):
         assert self.val_loader is not None

@@ -21,6 +21,7 @@ class COCODataset(BaseDataset):
     def __init__(self, config: dataset_config.Dataset) -> None:
         super().__init__()
         self.coco = COCO(config.label_path)
+        self.label_path = config.label_path
         self.image_dir_path = config.image_dir
         self.max_objects = config.max_objects
         self.image_ids = self.coco.getImgIds()
@@ -29,7 +30,7 @@ class COCODataset(BaseDataset):
             aug_config=config.augmentation, bbox=True
         )
 
-    def __getitem__(self, i) -> Tuple[Tensor, Dict[str, Tensor]]:
+    def __getitem__(self, i) -> Tuple[Tensor, Dict[str, Tensor], int]:
         result = {}
         image_id = self.image_ids[i]
         image_info = self.coco.loadImgs(image_id)[0]
@@ -67,13 +68,13 @@ class COCODataset(BaseDataset):
         else:
             out["boxes"] = torch.zeros([0, 4], dtype=torch.float32)
 
-        return result["image"], out
+        return result["image"], out, image_id
 
     def __len__(self) -> int:
         return len(self.coco.getImgIds())
 
     def get_num_classes(self) -> int:
-        return len(self.coco.getCatIds())
+        return max(self.coco.getCatIds())
 
 
 def collate_fn(batch):

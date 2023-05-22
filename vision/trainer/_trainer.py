@@ -9,6 +9,10 @@ class BasicTrainer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def eval(self):
+        pass
+
+    @abstractmethod
     def train_and_eval(self):
         pass
 

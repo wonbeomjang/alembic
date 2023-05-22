@@ -13,8 +13,7 @@ class YOLO(ModelConfig):
     neck: necks.Neck = necks.Neck(type="fpn")
     head: heads.Head = heads.Head(type="yolo")
 
-    fg_iou_thresh: float = 0.5
-    bg_iou_thresh: float = 0.4
+    iou_threshold: float = 0.5
 
     head.yolo.num_channels = neck.fpn.num_channels
 

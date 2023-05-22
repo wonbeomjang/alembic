@@ -279,6 +279,9 @@ class ClassificationTrainer(BasicTrainer):
     def train(self):
         self.trainer.fit(self.model, self.train_loader, ckpt_path=self.config.ckpt)
 
+    def eval(self):
+        self.trainer.test(self.model, self.val_loader, ckpt_path=self.config.ckpt)
+
     def train_and_eval(self):
         assert self.val_loader is not None
         self.trainer.fit(

@@ -9,8 +9,7 @@ except ModuleNotFoundError:
 
 import torch
 from torch import Tensor, nn
-from torchvision.models.detection import _utils as det_utils
-from torchvision.models.detection._utils import Matcher
+from torchvision.models.detection._utils import Matcher, BoxCoder
 from torchvision.ops import boxes as box_ops, sigmoid_focal_loss
 from vision.loss.utils import box_loss as box_criterion
 
@@ -23,6 +22,7 @@ class YOLOV4Loss(nn.Module):
         fg_iou_thresh: float,
         bg_iou_thresh: float,
         bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"],
+        box_coder: BoxCoder,
         proposer_matcher: Optional[Matcher] = None,
     ):
         super().__init__()
@@ -34,9 +34,9 @@ class YOLOV4Loss(nn.Module):
             )
         self.bbox_loss_type = bbox_loss_type
         self.proposer_matcher = proposer_matcher
-        self.box_coder = det_utils.BoxCoder(weights=(1.0, 1.0, 1.0, 1.0))
         self.class_loss_weight = 1.0
         self.box_loss_weight = 1.0
+        self.box_coder = box_coder
 
     def convert_preds_format(self, anchor, num_classes, num_images, preds):
         pred_bboxes = []
@@ -102,7 +102,7 @@ class YOLOV4Loss(nn.Module):
         preds: Dict[str, Dict[str, Tensor]],
         targets: List[Dict[str, Tensor]],
         anchor: Dict[str, Tensor],
-    ) -> Tensor:
+    ) -> Dict[str, Tensor]:
         num_images = len(targets)
         num_classes = preds[min(preds.keys())]["labels"].shape[-1]
         device = anchor[min(anchor.keys())].device
@@ -117,12 +117,13 @@ class YOLOV4Loss(nn.Module):
 
 
 @register_loss("yolo_v4_loss")
-def yolo_v4_loss(config: loss_config.Loss):
+def yolo_v4_loss(config: loss_config.Loss, **kwargs):
     assert config.type == "yolo_v4_loss"
 
     criterion = YOLOV4Loss(
         config.yolo_v4_loss.fg_iou_thresh,
         config.yolo_v4_loss.bg_iou_thresh,
         config.yolo_v4_loss.bbox_loss_type,
+        **kwargs
     )
     return criterion

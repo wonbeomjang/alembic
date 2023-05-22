@@ -7,7 +7,7 @@ from vision.configs.base_config import ModelConfig
 class AlembicResNet(ModelConfig):
     """ResNet config."""
 
-    model_id: str = "resnet50"
+    model_id: str = "resnet18"
     progress: bool = True
 
 
@@ -15,7 +15,7 @@ class AlembicResNet(ModelConfig):
 class AlembicMobileNet(ModelConfig):
     """ResNet config."""
 
-    model_id: str = "mobilenet_v2"
+    model_id: str = "mobilenet_v3_small"
     progress: bool = True
 
 
