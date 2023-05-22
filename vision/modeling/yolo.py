@@ -3,7 +3,7 @@ from typing import Dict, Optional, Tuple
 import torch
 from torch import nn, Tensor
 
-from vision.configs import detectionmodel as yolo_cfg
+from vision.configs import detection as yolo_cfg
 
 from vision.configs.base_config import ModelConfig
 from vision.modeling import register_model
@@ -42,6 +42,7 @@ class YOLO(nn.Module):
         self.anchor_generator = anchor_generator
         self.anchor: Optional[Dict[str, Tensor]] = None
         self.is_train = True
+        self.num_images = -1
 
     def forward(self, x: Tuple[Tensor]) -> Dict[str, Dict[str, Tensor]]:
         x = torch.stack(x)
@@ -49,7 +50,7 @@ class YOLO(nn.Module):
         feature = self.backbone(x)
         feature = self.neck(feature)
 
-        if self.anchor is None:
+        if self.num_images != x.shape[0]:
             self.anchor = self.anchor_generator(x, feature)
 
         x = self.head(feature)
@@ -63,8 +64,8 @@ def yolo(model_cfg: ModelConfig):
         model_cfg.yolo.head.yolo._min_level = model_cfg.yolo.neck.fpn.min_level
     if model_cfg.yolo.head.yolo._max_level != model_cfg.yolo.neck.fpn.max_level:
         model_cfg.yolo.head.yolo._max_level = model_cfg.yolo.neck.fpn.max_level
-    if model_cfg.num_classes != model_cfg.yolo.head._num_classes:
-        model_cfg.num_classes = model_cfg.yolo.head._num_classes
+    if model_cfg.yolo.head._num_classes != model_cfg.num_classes:
+        model_cfg.yolo.head._num_classes = model_cfg.num_classes
 
     model = YOLO(model_cfg.yolo)
 

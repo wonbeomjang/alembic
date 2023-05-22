@@ -60,20 +60,17 @@ class YOLOV4Loss(nn.Module):
             pred_labels, pred_bboxes, targets, reshaped_anchor
         ):
             if target["boxes"].numel() == 0:
-                match_index = torch.full(
-                    (anchor.size(0),), -1, dtype=torch.int64, device=device
-                )
-            else:
-                match_metrix = box_ops.box_iou(target["boxes"], anchor)
-                match_index: Tensor = self.proposer_matcher(match_metrix)
+                continue
+            match_metrix = box_ops.box_iou(target["boxes"], anchor)
+            match_index: Tensor = self.proposer_matcher(match_metrix)
 
             foreground_index = match_index >= 0
             num_foreground = foreground_index.sum()
             valid_index = match_index != self.proposer_matcher.BETWEEN_THRESHOLDS
 
             gt_label = torch.zeros_like(dt_label, device=device)
-            gt_label[foreground_index][
-                target["labels"][match_index[foreground_index]]
+            gt_label[
+                foreground_index, target["labels"][match_index[foreground_index]]
             ] = 1
 
             # num_valid, num_classes
@@ -116,11 +113,7 @@ class YOLOV4Loss(nn.Module):
         loss = self.compute_loss(
             device, pred_bboxes, pred_labels, reshaped_anchor, targets
         )
-        output: Tensor = (
-            self.class_loss_weight * loss["class"] + self.box_loss_weight * loss["box"]
-        )
-
-        return output
+        return loss
 
 
 @register_loss("yolo_v4_loss")

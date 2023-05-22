@@ -11,7 +11,7 @@ from vision.configs.loss import Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer
 from vision.configs.dataset import Dataset
-from vision.configs.detectionmodel import DetectionModel
+from vision.configs.detection import DetectionModel
 
 
 @dataclasses.dataclass

@@ -38,8 +38,8 @@ class DetectionTask(lightning.LightningModule):
 
         loss = self.criterion(preds, labels, self.model.anchor)
 
-        metrics = {"train_loss": loss}
-        self.log_dict(metrics)
+        self.log_dict(loss)
+        loss = sum(loss.values())
 
         return loss
 
@@ -51,9 +51,9 @@ class DetectionTask(lightning.LightningModule):
 
         loss = self.criterion(preds, labels, self.model.anchor)
         metrics = {
-            "val_loss": loss,
             "inference_time_ms": inference_time,
         }
+        metrics.update(loss)
 
         self.log_dict(metrics)
 
@@ -121,8 +121,8 @@ class DetectionTrainer(BasicTrainer):
             self.config.detection.total_steps = step_per_epochs * self.config.epochs
 
         if self.config.detection.detection_model.num_classes is None:
-            self.config.classification.classification_model.num_classes = (
-                self.train_loader.dataset.get_num_classes()
+            self.config.detection.detection_model.num_classes = (
+                self.train_loader.dataset.get_num_classes() + 1
             )
 
         self.model = DetectionTask(self.config.detection)

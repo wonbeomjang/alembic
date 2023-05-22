@@ -13,7 +13,7 @@ from vision.configs import dataset as dataset_config
 ALBUMENTATION_CHECK_VALIDITY = False
 
 
-if ALBUMENTATION_CHECK_VALIDITY:
+if ALBUMENTATION_CHECK_VALIDITY is False:
 
     def _convert_to_albumentations(
         self, data: Sequence[BoxType], rows: int, cols: int

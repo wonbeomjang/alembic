@@ -29,7 +29,7 @@ class AlembicGhostNet(ModelConfig):
 @dataclasses.dataclass
 class Backbone(ModelConfig):
     type: Optional[str] = None
-    pretrained: bool = False
+    pretrained: bool = True
     alembic_resnet: AlembicResNet = AlembicResNet()
     alembic_mobilenet: AlembicMobileNet = AlembicMobileNet()
     alembic_ghostnet: AlembicGhostNet = AlembicGhostNet()

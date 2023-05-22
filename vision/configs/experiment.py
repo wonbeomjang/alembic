@@ -1,13 +1,14 @@
 import os.path
-from typing import Tuple
+from typing import Tuple, Optional
 
 import cv2
 
 from vision.configs import register_experiment_config
 from vision.configs.classification import ClassificationModel
 from vision.configs.dataset import Dataset, Augmentation
-from vision.configs.detectionmodel import DetectionModel
+from vision.configs.detection import DetectionModel
 from vision.configs.loss import Loss, CrossEntropyLoss, YOLOv4Loss
+from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer, Adam
 from vision.configs.task import Trainer, ClassificationTask, DetectionTask
 
@@ -106,7 +107,7 @@ def coco_yolo():
     batch_size: int = 2
     num_workers: int = 4
     learning_rate: float = 1e-4
-    num_classes: int = 91 + 1
+    num_classes: Optional[int] = None
 
     exp_config = Trainer(
         type="detection",
@@ -116,9 +117,12 @@ def coco_yolo():
                 num_classes=num_classes,
             ),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
+            lr_scheduler=LRScheduler(type="one_cycle_lr"),
             loss=Loss(
                 type="yolo_v4_loss",
-                yolo_v4_loss=YOLOv4Loss(),
+                yolo_v4_loss=YOLOv4Loss(
+                    bbox_loss_type="smooth_l1",
+                ),
             ),
         ),
         epochs=epochs,

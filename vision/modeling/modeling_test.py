@@ -6,7 +6,7 @@ from torch import Tensor
 
 from vision.configs import backbones
 from vision.configs import classification
-from vision.configs import detectionmodel
+from vision.configs import detection
 from vision.modeling.backbones import get_backbone as get_backbone_model
 from vision.modeling import get_model
 
@@ -59,7 +59,7 @@ class Test(parameterized.TestCase):
         self.assertEqual(result.shape, torch.Size([1, 1000]))
 
         # test yolo
-        yolo_cfg = detectionmodel.YOLO()
+        yolo_cfg = detection.YOLO()
         yolo_cfg.backbone = backbone_cfg
 
         model = get_model(yolo_cfg).to(device)
