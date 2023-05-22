@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Sequence
 
 from vision.loss import register_loss
 
@@ -37,19 +37,6 @@ class YOLOV4Loss(nn.Module):
         self.class_loss_weight = 1.0
         self.box_loss_weight = 1.0
         self.box_coder = box_coder
-
-    def convert_preds_format(self, anchor, num_classes, num_images, preds):
-        pred_bboxes = []
-        pred_labels = []
-        reshaped_anchor = torch.cat(
-            [v.reshape(num_images, -1, 4) for v in anchor.values()], dim=1
-        )
-        for pred in preds.values():
-            pred_bboxes += [pred["boxes"].reshape(num_images, -1, 4)]
-            pred_labels += [pred["labels"].reshape(num_images, -1, num_classes)]
-        pred_bboxes = torch.cat(pred_bboxes, dim=1)
-        pred_labels = torch.cat(pred_labels, dim=1)
-        return pred_bboxes, pred_labels, reshaped_anchor
 
     def compute_loss(
         self, device, pred_bboxes, pred_labels, reshaped_anchor, targets
@@ -99,19 +86,13 @@ class YOLOV4Loss(nn.Module):
 
     def forward(
         self,
-        preds: Dict[str, Dict[str, Tensor]],
-        targets: List[Dict[str, Tensor]],
-        anchor: Dict[str, Tensor],
+        preds: Dict[str, Tensor],
+        targets: Sequence[Tensor],
+        anchor: Tensor,
     ) -> Dict[str, Tensor]:
-        num_images = len(targets)
-        num_classes = preds[min(preds.keys())]["labels"].shape[-1]
-        device = anchor[min(anchor.keys())].device
-
-        pred_bboxes, pred_labels, reshaped_anchor = self.convert_preds_format(
-            anchor, num_classes, num_images, preds
-        )
+        device = anchor.device
         loss = self.compute_loss(
-            device, pred_bboxes, pred_labels, reshaped_anchor, targets
+            device, preds["boxes"], preds["labels"], anchor, targets
         )
         return loss
 

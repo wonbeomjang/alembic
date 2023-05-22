@@ -63,25 +63,12 @@ class YOLO(nn.Module):
         if self.training:
             return x
 
-        num_classes = x[min(x.keys())]["labels"].shape[-1]
-        num_images = x[min(x.keys())]["labels"].shape[0]
-
-        pred_bboxes = []
-        pred_labels = []
-        reshaped_anchor = torch.cat(
-            [v.reshape(num_images, -1, 4) for v in self.anchor.values()], dim=1
-        )
-
-        for pred in x.values():
-            pred_bboxes += [pred["boxes"].reshape(num_images, -1, 4)]
-            pred_labels += [pred["labels"].reshape(num_images, -1, num_classes)]
-
-        pred_bboxes = torch.cat(pred_bboxes, dim=1)
-        pred_labels = torch.cat(pred_labels, dim=1)
+        pred_bboxes = x["boxes"]
+        pred_labels = x["labels"]
 
         result = []
 
-        for dt_label, dt_bbox, anchor in zip(pred_labels, pred_bboxes, reshaped_anchor):
+        for dt_label, dt_bbox, anchor in zip(pred_labels, pred_bboxes, self.anchor):
             dt_score, dt_class = torch.max(dt_label, dim=1)
             foreground_index = dt_class != 0
 

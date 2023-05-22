@@ -127,7 +127,7 @@ class AnchorGenerator(nn.Module):
 
     def forward(
         self, image_list: List[Tensor], feature_maps: Dict[str, Tensor]
-    ) -> Dict[str, Tensor]:
+    ) -> Tensor:
         min_key = min(feature_maps.keys())
         grid_sizes = {
             key: feature_map.shape[-2:] for key, feature_map in feature_maps.items()
@@ -148,10 +148,20 @@ class AnchorGenerator(nn.Module):
         }
         self.set_cell_anchors(dtype, device)
         anchors_over_all_feature_maps = self.grid_anchors(grid_sizes, strides)
+        num_images = len(image_list)
+
         for pyramid_level in anchors_over_all_feature_maps:
             anchors_over_all_feature_maps[
                 pyramid_level
             ] = anchors_over_all_feature_maps[pyramid_level].repeat(
-                len(image_list), 1, 1, 1, 1
+                num_images, 1, 1, 1, 1
             )
-        return anchors_over_all_feature_maps
+
+        reshaped_anchor = torch.cat(
+            [
+                v.reshape(num_images, -1, 4)
+                for v in anchors_over_all_feature_maps.values()
+            ],
+            dim=1,
+        )
+        return reshaped_anchor

@@ -1,6 +1,6 @@
-from collections import defaultdict
 from typing import Dict
 
+import torch
 from torch import nn, Tensor
 
 from vision.configs import heads as head_config
@@ -36,15 +36,15 @@ class YOLOHead(nn.Module):
             self.head[str(pyramid_level)] = nn.Sequential(*_head)
 
     def forward(self, x: Dict[str, Tensor]):
-        output = defaultdict(dict)
+        result = []
 
         for pyramid_level in range(self.min_level, self.max_level + 1):
             res = self.head[str(pyramid_level)](x[str(pyramid_level)])
             n, _, w, h = res.shape
-            res = res.reshape(n, self.num_anchors, w, h, -1)
+            result += [res.reshape(n, self.num_anchors * w * h, -1)]
+        result = torch.cat(result, dim=1)
 
-            output[str(pyramid_level)]["boxes"] = res[:, :, :, :, :4]
-            output[str(pyramid_level)]["labels"] = res[:, :, :, :, 4:]
+        output = {"boxes": result[..., :4], "labels": result[..., 4:]}
 
         return output
 
