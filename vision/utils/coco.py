@@ -1,4 +1,5 @@
 import copy
+from typing import Dict
 
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -42,8 +43,17 @@ class COCOEval:
             ]
             self.anno_id += 1
 
-    def eval(self):
+    def eval(self) -> Dict[str, float]:
         coco_eval = COCOeval(self.coco_gt, self.coco_dt, "bbox")
         coco_eval.evaluate()
         coco_eval.accumulate()
-        coco_eval.summarize()
+        coco_stats = coco_eval.stats
+
+        result = {}
+
+        if coco_stats:
+            result["coco/mAP_50:95"] = coco_stats[0]
+            result["coco/mAP_50"] = coco_stats[1]
+            result["coco/mAR_50:95"] = coco_stats[8]
+
+        return result

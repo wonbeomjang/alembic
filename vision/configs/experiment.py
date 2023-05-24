@@ -20,8 +20,8 @@ DOG_VS_CAT_BASE_TRAIN_LABEL = "train.json"
 DOG_VS_CAT_BASE_VAL_LABEL = "val.json"
 DOG_VS_CAT_BASE_IMAGE_DIR_NAME = "images"
 
-COCO_BASE_DIR = os.path.join("/home/wonbeom/Desktop/code", "datasets", "coco")
-# COCO_BASE_DIR = os.path.join("..", "datasets", "coco")
+# COCO_BASE_DIR = os.path.join("/home/wonbeom/Desktop/code", "datasets", "coco")
+COCO_BASE_DIR = os.path.join("..", "datasets", "coco")
 COCO_TRAIN_LABEL = os.path.join("annotations", "instances_train2017.json")
 COCO_TRAIN_IMAGE_DIR = os.path.join("images", "train2017")
 COCO_VAL_LABEL = os.path.join("annotations", "instances_val2017.json")
@@ -108,7 +108,7 @@ def dog_vs_cat_classification_resnet():
 def coco_yolo():
     epochs: int = 100
     image_size: Tuple[int, int, int] = (3, 512, 512)
-    batch_size: int = 2
+    batch_size: int = 64
     num_workers: int = 4
     learning_rate: float = 1e-4
     num_classes: Optional[int] = None

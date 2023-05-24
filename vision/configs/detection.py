@@ -9,7 +9,7 @@ from vision.configs.base_config import ModelConfig
 class YOLO(ModelConfig):
     """ResNet config."""
 
-    backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")
+    backbone: backbones.Backbone = backbones.Backbone(type="alembic_mobilenet")
     neck: necks.Neck = necks.Neck(type="fpn")
     head: heads.Head = heads.Head(type="yolo")
 

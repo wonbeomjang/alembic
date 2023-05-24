@@ -8,7 +8,7 @@ from lightning import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning.pytorch.callbacks import ModelCheckpoint
-from torch import nn, optim
+from torch import nn, optim, Tensor
 from torch.utils.data import DataLoader
 
 from vision.configs import task as trainer_config
@@ -39,16 +39,21 @@ class DetectionTask(lightning.LightningModule):
     def forward(self, x, *args: Any, **kwargs: Any) -> Any:
         return self.model(x, *args, **kwargs)
 
-    def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
+    def training_step(self, batch, batch_idx) -> Optional[STEP_OUTPUT]:
         images, labels, _ = batch
         preds = self(images)
 
-        loss = self.criterion(preds, labels, self.model.anchor)
+        loss: Dict[str, Tensor] = self.criterion(preds, labels, self.model.anchor)
+
+        result_loss = sum(loss.values())
+        loss = {"train/" + k: v for k, v in loss.items()}
+        loss["train/loss"] = result_loss
 
         self.log_dict(loss)
-        loss = sum(loss.values())
 
-        return loss
+        if result_loss != 0.0:
+            return result_loss
+        return None
 
     def validation_step(self, batch, batch_idx):
         images, labels, image_ids = batch
@@ -58,6 +63,11 @@ class DetectionTask(lightning.LightningModule):
         inference_time = (time.time_ns() - cur_time) / 1_000_000
 
         loss = self.criterion(preds, labels, self.model.anchor)
+
+        result_loss = sum(loss.values())
+        loss = {"val/" + k: v for k, v in loss.items()}
+        loss["val/loss"] = result_loss
+
         metrics = {
             "inference_time_ms": inference_time,
         }
@@ -90,7 +100,9 @@ class DetectionTask(lightning.LightningModule):
         super().on_train_epoch_end()
 
     def on_validation_end(self) -> None:
-        self.coco_eval.eval()
+        if self.coco_eval is not None:
+            result = self.coco_eval.eval()
+            self.log_dict(result)
         super().on_validation_end()
 
     def configure_optimizers(
@@ -136,7 +148,7 @@ class DetectionTrainer(BasicTrainer):
         self.train_loader = get_dataloader(self.config.train_data)
         if self.config.val_data is not None:
             self.val_loader = get_dataloader(self.config.val_data)
-            coco_eval = COCOEval(self.val_loader.dataset.label_path)
+            # coco_eval = COCOEval(self.val_loader.dataset.label_path)
 
         step_per_epochs = len(self.train_loader)
 

@@ -19,4 +19,4 @@ if deterministic:
 if __name__ == "__main__":
     exp_config = get_config("coco_yolo")
     trainer = get_trainer(exp_config)
-    trainer.eval()
+    trainer.train_and_eval()
