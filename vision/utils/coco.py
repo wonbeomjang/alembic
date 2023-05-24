@@ -40,7 +40,7 @@ class COCOEval:
                     "id": self.anno_id,
                     "iscrowd": 0,
                 }
-            ]
+            ]  # type: ignore
             self.anno_id += 1
 
     def eval(self) -> Dict[str, float]:
