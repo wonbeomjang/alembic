@@ -18,4 +18,4 @@ setuptools~=66.0.0
 torch~=2.0.0
 torchvision~=0.15.1
 pycocotools~=2.0.6
-tensorboard==2.13.0
+tensorboard~=2.10.0

@@ -21,7 +21,7 @@ class YOLOV4Loss(nn.Module):
         self,
         fg_iou_thresh: float,
         bg_iou_thresh: float,
-        bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"],
+        bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"],  # type: ignore
         box_coder: BoxCoder,
         proposer_matcher: Optional[Matcher] = None,
     ):
