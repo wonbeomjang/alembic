@@ -1,12 +1,10 @@
 import os.path
 from typing import Tuple, Optional
 
-import cv2
-
 from vision.configs import register_experiment_config
 from vision.configs.classification import ClassificationModel
-from vision.configs.dataset import Dataset, Augmentation
 from vision.configs.detection import DetectionModel
+from vision.configs.dataset import Dataset, Augmentation, AugPolicy
 from vision.configs.loss import Loss, CrossEntropyLoss, YOLOv4Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer, Adam
@@ -29,15 +27,18 @@ COCO_VAL_IMAGE_DIR = os.path.join("images", "val2017")
 def dog_vs_cat_classification_resnet():
     epochs: int = 100
     image_size: Tuple[int, int, int] = (3, 256, 256)
-    batch_size: int = 32
+    batch_size: int = 256
     num_workers: int = 4
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-4
 
     exp_config = Trainer(
         type="classification",
         classification=ClassificationTask(
-            classification_model=ClassificationModel(num_classes=2),
+            classification_model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
+            lr_scheduler=LRScheduler(
+                type="one_cycle_lr",
+            ),
             loss=Loss(
                 type="cross_entropy_loss",
                 cross_entropy_loss=CrossEntropyLoss(label_smoothing=0.1),
@@ -52,26 +53,7 @@ def dog_vs_cat_classification_resnet():
             batch_size=batch_size,
             shuffle=True,
             num_workers=num_workers,
-            augmentation=Augmentation(
-                aug_list=[
-                    ("LongestMaxSize", {"max_size": max(image_size)}),
-                    (
-                        "PadIfNeeded",
-                        {
-                            "min_height": image_size[1],
-                            "min_width": image_size[2],
-                            "border_mode": cv2.BORDER_CONSTANT,
-                        },
-                    ),
-                    ("HorizontalFlip", {}),
-                    ("VerticalFlip", {}),
-                    ("GaussianBlur", {"p": 0.2}),
-                    ("RandomBrightnessContrast", {"p": 0.2}),
-                    ("RandomGamma", {"p": 0.2}),
-                    ("Rotate", {"limit": 180}),
-                    ("Normalize", {}),
-                ]
-            ),
+            augmentation=Augmentation(aug_list=AugPolicy.simple_aug(image_size)),
         ),
         val_data=Dataset(
             type="classification",
@@ -81,20 +63,7 @@ def dog_vs_cat_classification_resnet():
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
-            augmentation=Augmentation(
-                aug_list=[
-                    ("LongestMaxSize", {"max_size": max(image_size)}),
-                    (
-                        "PadIfNeeded",
-                        {
-                            "min_height": image_size[1],
-                            "min_width": image_size[2],
-                            "border_mode": cv2.BORDER_CONSTANT,
-                        },
-                    ),
-                    ("Normalize", {}),
-                ]
-            ),
+            augmentation=Augmentation(aug_list=AugPolicy.val_aug(image_size)),
         ),
     )
 
@@ -135,21 +104,7 @@ def coco_yolo():
             batch_size=batch_size,
             shuffle=True,
             num_workers=num_workers,
-            augmentation=Augmentation(
-                aug_list=[
-                    ("LongestMaxSize", {"max_size": max(image_size)}),
-                    (
-                        "PadIfNeeded",
-                        {
-                            "min_height": image_size[1],
-                            "min_width": image_size[2],
-                            "border_mode": cv2.BORDER_CONSTANT,
-                        },
-                    ),
-                    ("HorizontalFlip", {}),
-                    ("Normalize", {}),
-                ]
-            ),
+            augmentation=Augmentation(aug_list=AugPolicy.simple_aug(image_size)),
         ),
         val_data=Dataset(
             type="coco",
@@ -159,20 +114,7 @@ def coco_yolo():
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
-            augmentation=Augmentation(
-                aug_list=[
-                    ("LongestMaxSize", {"max_size": max(image_size)}),
-                    (
-                        "PadIfNeeded",
-                        {
-                            "min_height": image_size[1],
-                            "min_width": image_size[2],
-                            "border_mode": cv2.BORDER_CONSTANT,
-                        },
-                    ),
-                    ("Normalize", {}),
-                ]
-            ),
+            augmentation=Augmentation(aug_list=AugPolicy.val_aug(image_size)),
         ),
     )
 
