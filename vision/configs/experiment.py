@@ -12,15 +12,12 @@ from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer, Adam
 from vision.configs.task import Trainer, ClassificationTask, DetectionTask
 
-DOG_VS_CAT_BASE_DIR = os.path.join(
-    "/home/wonbeom/Desktop/code", "datasets", "dog_vs_cat"
-)
-# DOG_VS_CAT_BASE_DIR = os.path.join("..", "datasets", "dog_vs_cat")
+
+DOG_VS_CAT_BASE_DIR = os.path.join("..", "datasets", "dog_vs_cat")
 DOG_VS_CAT_BASE_TRAIN_LABEL = "train.json"
 DOG_VS_CAT_BASE_VAL_LABEL = "val.json"
 DOG_VS_CAT_BASE_IMAGE_DIR_NAME = "images"
 
-# COCO_BASE_DIR = os.path.join("/home/wonbeom/Desktop/code", "datasets", "coco")
 COCO_BASE_DIR = os.path.join("..", "datasets", "coco")
 COCO_TRAIN_LABEL = os.path.join("annotations", "instances_train2017.json")
 COCO_TRAIN_IMAGE_DIR = os.path.join("images", "train2017")
