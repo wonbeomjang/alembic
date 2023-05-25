@@ -3,7 +3,8 @@ from torch import Tensor
 from torch import nn
 
 from vision.configs import classification as classification_cfg
-from vision.modeling.backbones import get_model
+from vision.configs.base_config import ModelConfig
+from vision.modeling.backbones import get_backbone
 from vision.modeling import register_model
 
 
@@ -13,7 +14,7 @@ class ClassificationModel(nn.Module):
         model_config: classification_cfg.ClassificationModel,
     ):
         super().__init__()
-        self.backbone = get_model(model_config.backbone)
+        self.backbone = get_backbone(model_config.backbone)
 
         with torch.no_grad():
             dummy_input = torch.randn((1, 3, 256, 256))
@@ -35,7 +36,9 @@ class ClassificationModel(nn.Module):
 
 
 @register_model("classification")
-def classification(model_cfg: ClassificationModel):
+def classification(model_cfg: ModelConfig):
+    assert isinstance(model_cfg, classification_cfg.ClassificationModel)
+
     model = ClassificationModel(model_cfg)
 
     return model

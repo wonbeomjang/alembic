@@ -87,7 +87,7 @@ class AugPolicy:
 
 @dataclasses.dataclass
 class Augmentation:
-    aug_list: Sequence[Tuple[str, Dict[str, Any]]] = AugPolicy.val_aug((3, 256, 256))
+    aug_list: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None
 
 
 @dataclasses.dataclass
@@ -108,4 +108,6 @@ class Dataset:
     persistent_workers: bool = False
     pin_memory_device: str = ""
 
-    augmentation: Augmentation = Augmentation()
+    augmentation: Augmentation = Augmentation(aug_list=AugPolicy.val_aug(image_size))
+
+    max_objects: int = 100

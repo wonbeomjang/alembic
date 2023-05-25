@@ -51,7 +51,9 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     Returns:
         fn (Callable): The model builder method.
     """
-    name = name.lower()
+    assert name is not None
+
+    name = name.lower()  # type: ignore
     try:
         fn = BUILTIN_MODELS[name]
     except KeyError:
@@ -59,16 +61,16 @@ def get_model_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_model(model_cfg, **config: Any) -> nn.Module:
+def get_model(model_config, **config: Any) -> nn.Module:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        model_cfg (ModelConfig): config of the model
+        model_config (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_model_builder(model_cfg.type)
-    return fn(model_cfg, **config)
+    fn = get_model_builder(model_config.type)
+    return fn(model_config, **config)
