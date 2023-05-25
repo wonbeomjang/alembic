@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 
 @dataclasses.dataclass
 class YOLO:
-    num_blocks: int = 4
+    num_blocks: int = 3
     num_channels: Optional[int] = None
 
     _min_level: Optional[int] = None

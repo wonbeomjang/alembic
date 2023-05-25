@@ -91,7 +91,7 @@ def coco_yolo():
             loss=Loss(
                 type="yolo_v4_loss",
                 yolo_v4_loss=YOLOv4Loss(
-                    bbox_loss_type="smooth_l1",
+                    bbox_loss_type="ciou",
                 ),
             ),
         ),
