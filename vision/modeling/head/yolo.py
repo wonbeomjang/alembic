@@ -20,7 +20,9 @@ class YOLOHead(nn.Module):
             _head = []
             for i in range(config.yolo.num_blocks - 1):
                 _head += [
-                    nn.Conv2d(config.yolo.num_channels, config.yolo.num_channels, 3, 1)
+                    nn.Conv2d(
+                        config.yolo.num_channels, config.yolo.num_channels, 3, 1, 1
+                    )
                 ]
 
             _head += [
