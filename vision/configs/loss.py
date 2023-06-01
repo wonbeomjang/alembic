@@ -23,7 +23,7 @@ class CrossEntropyLoss:
 class YOLOv4Loss:
     bg_iou_thresh: float = 0.4
     fg_iou_thresh: float = 0.5
-    bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"] = "ciou"  # type: ignore
+    bbox_loss_type: Literal["l1", "smooth_l1", "ciou", "diou", "giou"] = "smooth_l1"  # type: ignore
 
 
 @dataclasses.dataclass

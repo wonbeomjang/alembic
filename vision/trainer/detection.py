@@ -10,7 +10,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim, Tensor
 from torch.utils.data import DataLoader
-from torchvision.utils import draw_bounding_boxes, save_image
+from torchvision.utils import draw_bounding_boxes
 
 from vision.configs import task as trainer_config
 from vision.configs.optimizer import Optimizer
@@ -54,6 +54,31 @@ class DetectionTask(lightning.LightningModule):
 
         self.log_dict(loss)
 
+        if batch_idx == 0:
+            result = self.model.bbox_decoder(preds)
+            dt_image = self.draw_bbox(
+                images[0],
+                result["bboxes"][0],
+                result["scores"][0],
+                result["category_ids"][0],
+            )
+            gt_image = self.draw_bbox(
+                images[0],
+                labels[0]["boxes"],
+                torch.ones(labels[0]["labels"].shape),
+                labels[0]["labels"],
+            )
+            self.logger.experiment.add_image(
+                "train/dt_image",
+                dt_image,
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "train/gt_image",
+                gt_image,
+                self.global_step,
+            )
+
         if result_loss != 0.0:
             return result_loss
         return None
@@ -63,27 +88,6 @@ class DetectionTask(lightning.LightningModule):
 
         cur_time = time.time_ns()
         preds = self(images)
-        result = self.model.bbox_decoder(preds)
-
-        if batch_idx == 0:
-            single_image = images[0]
-            single_bbox = result["bboxes"][0]
-            single_score = result["scores"][0].detach().cpu().tolist()
-            single_category_id = result["category_ids"][0].detach().cpu().tolist()
-
-            label_txt = [
-                f"{label}: {score:.2f}"
-                for label, score in zip(single_category_id, single_score)
-            ]
-            single_image = (
-                ((single_image * STD.to(self.device)) + MEAN.to(self.device)) * 255
-            ).to(torch.uint8)
-            single_image = draw_bounding_boxes(
-                single_image, single_bbox, labels=label_txt, width=3
-            )
-            single_image = single_image.float() / 255
-
-            save_image(single_image, "./image.png")
 
         inference_time = (time.time_ns() - cur_time) / 1_000_000
 
@@ -98,9 +102,35 @@ class DetectionTask(lightning.LightningModule):
         }
         metrics.update(loss)
 
+        if batch_idx == 0:
+            result = self.model.bbox_decoder(preds)
+            dt_image = self.draw_bbox(
+                images[0],
+                result["bboxes"][0],
+                result["scores"][0],
+                result["category_ids"][0],
+            )
+            gt_image = self.draw_bbox(
+                images[0],
+                labels[0]["boxes"],
+                torch.ones(labels[0]["labels"].shape),
+                labels[0]["labels"],
+            )
+            self.logger.experiment.add_image(
+                "val/dt_image",
+                dt_image,
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "val/gt_image",
+                gt_image,
+                self.global_step,
+            )
+
         self.log_dict(metrics)
 
         if self.coco_eval is not None:
+            result = self.model.bbox_decoder(preds)
             num_images = len(images)
 
             for i in range(num_images):
@@ -111,6 +141,28 @@ class DetectionTask(lightning.LightningModule):
                     result["bboxes"][i],
                     result["scores"][i],
                 )
+
+    def draw_bbox(self, single_image, single_bbox, single_score, single_category_id):
+        image = []
+
+        single_score = single_score.detach().cpu().tolist()
+        single_category_id = single_category_id.detach().cpu().tolist()
+
+        label_txt = [
+            f"{label}: {score:.2f}"
+            for label, score in zip(single_category_id, single_score)
+        ]
+        single_image = (
+            ((single_image * STD.to(self.device)) + MEAN.to(self.device)) * 255
+        ).to(torch.uint8)
+        single_image = draw_bounding_boxes(
+            single_image, single_bbox, labels=label_txt, width=3
+        )
+        single_image = single_image.float() / 255
+
+        image += [single_image]
+
+        return torch.cat(image, dim=2)
 
     def test_step(self, batch, batch_idx):
         self.validation_step(batch, batch_idx)
