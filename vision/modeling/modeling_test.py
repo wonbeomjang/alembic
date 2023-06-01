@@ -55,7 +55,7 @@ class Test(parameterized.TestCase):
         classification_cfg.backbone = backbone_cfg
 
         classification_model = get_model(classification_cfg).to(device)
-        result: Tensor = classification_model(torch.randn(1, 3, 256, 256))
+        result: Tensor = classification_model(torch.randn(1, 3, 256, 256).to(device))
         self.assertEqual(result.shape, torch.Size([1, 1000]))
 
         # test yolo
@@ -64,7 +64,10 @@ class Test(parameterized.TestCase):
         detection_cfg.yolo.backbone = backbone_cfg
 
         model = get_model(detection_cfg).to(device)
-        input_data = (torch.randn(3, 256, 256), torch.randn(3, 256, 256))
+        input_data = (
+            torch.randn(3, 256, 256).to(device),
+            torch.randn(3, 256, 256).to(device),
+        )
         result: Dict[str, Tensor] = model(input_data)
 
         self.assertEqual(result["boxes"].size(2), 4)
