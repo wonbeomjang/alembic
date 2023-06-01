@@ -15,6 +15,8 @@ def get_coco_annotation_from_obj(obj, label2id):
 
     category_id = label2id[label]
     bndbox = obj.find("bndbox")
+
+    assert bndbox is not None
     xmin = float(bndbox.findtext("xmin")) - 1
     ymin = float(bndbox.findtext("ymin")) - 1
     xmax = float(bndbox.findtext("xmax"))
@@ -45,6 +47,8 @@ def get_image_info(annotation_root):
     img_id = os.path.splitext(img_name)[0]
 
     size = annotation_root.find("size")
+
+    assert size is not None
     width = int(size.findtext("width"))
     height = int(size.findtext("height"))
 
