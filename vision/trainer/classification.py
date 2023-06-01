@@ -25,10 +25,7 @@ from vision.loss import get_loss
 from vision.optimizer import get_optimizer
 from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
-
-
-MEAN = torch.unsqueeze(torch.unsqueeze(torch.Tensor((0.485, 0.456, 0.406)), -1), -1)
-STD = torch.unsqueeze(torch.unsqueeze(torch.Tensor((0.229, 0.224, 0.225)), -1), -1)
+from vision.utils.common import STD, MEAN
 
 
 class ClassificationTask(lightning.LightningModule):

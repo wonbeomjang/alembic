@@ -1,4 +1,4 @@
-import os.path
+import os
 import time
 from typing import Any, Union, Tuple, List, Dict, Optional
 
@@ -10,6 +10,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim, Tensor
 from torch.utils.data import DataLoader
+from torchvision.utils import draw_bounding_boxes
 
 from vision.configs import task as trainer_config
 from vision.configs.optimizer import Optimizer
@@ -17,10 +18,12 @@ from vision.dataloader import get_dataloader
 from vision.lr_scheduler import get_lr_scheduler
 from vision.modeling import get_model
 from vision.loss import get_loss
+from vision.modeling.yolo import YOLO
 from vision.optimizer import get_optimizer
 from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
 from vision.utils.coco import COCOEval
+from vision.utils.common import STD, MEAN
 
 
 class DetectionTask(lightning.LightningModule):
@@ -31,7 +34,7 @@ class DetectionTask(lightning.LightningModule):
         self.config = config
         self.coco_eval = coco_eval
 
-        self.model: nn.Module = get_model(config.detection_model)
+        self.model: YOLO = get_model(config.detection_model)
         self.criterion: nn.Module = get_loss(
             config.loss, box_coder=self.model.box_coder
         )
@@ -51,6 +54,31 @@ class DetectionTask(lightning.LightningModule):
 
         self.log_dict(loss)
 
+        if batch_idx == 0:
+            result = self.model.bbox_decoder(preds)
+            dt_image = self.draw_bbox(
+                images[0],
+                result["bboxes"][0],
+                result["scores"][0],
+                result["category_ids"][0],
+            )
+            gt_image = self.draw_bbox(
+                images[0],
+                labels[0]["boxes"],
+                torch.ones(labels[0]["labels"].shape),
+                labels[0]["labels"],
+            )
+            self.logger.experiment.add_image(
+                "train/dt_image",
+                dt_image,
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "train/gt_image",
+                gt_image,
+                self.global_step,
+            )
+
         if result_loss != 0.0:
             return result_loss
         return None
@@ -59,7 +87,8 @@ class DetectionTask(lightning.LightningModule):
         images, labels, image_ids = batch
 
         cur_time = time.time_ns()
-        preds, result = self(images)
+        preds = self(images)
+
         inference_time = (time.time_ns() - cur_time) / 1_000_000
 
         loss = self.criterion(preds, labels, self.model.anchor)
@@ -73,19 +102,67 @@ class DetectionTask(lightning.LightningModule):
         }
         metrics.update(loss)
 
+        if batch_idx == 0:
+            result = self.model.bbox_decoder(preds)
+            dt_image = self.draw_bbox(
+                images[0],
+                result["bboxes"][0],
+                result["scores"][0],
+                result["category_ids"][0],
+            )
+            gt_image = self.draw_bbox(
+                images[0],
+                labels[0]["boxes"],
+                torch.ones(labels[0]["labels"].shape),
+                labels[0]["labels"],
+            )
+            self.logger.experiment.add_image(
+                "val/dt_image",
+                dt_image,
+                self.global_step,
+            )
+            self.logger.experiment.add_image(
+                "val/gt_image",
+                gt_image,
+                self.global_step,
+            )
+
         self.log_dict(metrics)
 
         if self.coco_eval is not None:
+            result = self.model.bbox_decoder(preds)
             num_images = len(images)
 
             for i in range(num_images):
-                image_id = torch.full_like(result[i]["category_ids"], image_ids[i])
+                image_id = torch.full_like(result["category_ids"][i], image_ids[i])
                 self.coco_eval.update_dt(
                     image_id,
-                    result[i]["category_ids"],
-                    result[i]["bboxes"],
-                    result[i]["scores"],
+                    result["category_ids"][i],
+                    result["bboxes"][i],
+                    result["scores"][i],
                 )
+
+    def draw_bbox(self, single_image, single_bbox, single_score, single_category_id):
+        image = []
+
+        single_score = single_score.detach().cpu().tolist()
+        single_category_id = single_category_id.detach().cpu().tolist()
+
+        label_txt = [
+            f"{label}: {score:.2f}"
+            for label, score in zip(single_category_id, single_score)
+        ]
+        single_image = (
+            ((single_image * STD.to(self.device)) + MEAN.to(self.device)) * 255
+        ).to(torch.uint8)
+        single_image = draw_bounding_boxes(
+            single_image, single_bbox, labels=label_txt, width=3
+        )
+        single_image = single_image.float() / 255
+
+        image += [single_image]
+
+        return torch.cat(image, dim=2)
 
     def test_step(self, batch, batch_idx):
         self.validation_step(batch, batch_idx)
@@ -133,7 +210,7 @@ class DetectionTrainer(BasicTrainer):
         coco_eval = None
         checkpoint_callback = []
         if self.config.logger == "tensorboard":
-            logger = TensorBoardLogger(save_dir=self.config.log_dir)
+            logger = TensorBoardLogger(save_dir=self.config.log_dir, name="")
 
         if self.config.save_best_model:
             checkpoint_callback += [

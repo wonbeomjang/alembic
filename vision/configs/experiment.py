@@ -33,6 +33,7 @@ def dog_vs_cat_classification_resnet():
 
     exp_config = Trainer(
         type="classification",
+        logger="tensorboard",
         classification=ClassificationTask(
             classification_model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
@@ -81,6 +82,7 @@ def coco_yolo():
 
     exp_config = Trainer(
         type="detection",
+        logger="tensorboard",
         detection=DetectionTask(
             detection_model=DetectionModel(
                 type="yolo",
