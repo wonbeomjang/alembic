@@ -43,8 +43,10 @@ class YOLO(nn.Module):
             anchor_generator = AnchorGenerator()
         self.anchor_generator = anchor_generator
         self.box_coder = det_utils.BoxCoder(weights=(1.0, 1.0, 1.0, 1.0))
-        self.anchor: Optional[Dict[str, Tensor]] = None
+        self.anchor: Optional[Tensor] = None
         self.iou_threshold = model_config.iou_threshold
+        self.score_threshold = model_config.score_threshold
+
         self.is_train = True
         self.num_images = -1
 
@@ -60,17 +62,21 @@ class YOLO(nn.Module):
             self.anchor = self.anchor_generator(x, feature)
 
         x = self.head(feature)
-        if self.training:
-            return x
 
+        return x
+
+    def bbox_decoder(self, x) -> Dict[str, Tensor]:
         pred_bboxes = x["boxes"]
         pred_labels = x["labels"]
+        pred_labels = torch.sigmoid(pred_labels)
 
-        result = []
+        result = {"category_ids": [], "bboxes": [], "scores": []}
 
         for dt_label, dt_bbox, anchor in zip(pred_labels, pred_bboxes, self.anchor):
             dt_score, dt_class = torch.max(dt_label, dim=1)
-            foreground_index = dt_class != 0
+            foreground_index = torch.logical_and(
+                dt_class != 0, dt_score > self.score_threshold
+            )
 
             dt_class = dt_class[foreground_index]
             dt_score = dt_score[foreground_index]
@@ -84,11 +90,14 @@ class YOLO(nn.Module):
             dt_score = dt_score[nms_index]
             dt_bbox = dt_bbox[nms_index]
 
-            result += [
-                {"category_ids": dt_class, "bboxes": dt_bbox, "scores": dt_score}
-            ]
+            result["category_ids"] += [dt_class]
+            result["scores"] += [dt_score]
+            result["bboxes"] += [dt_bbox]
 
-        return x, result
+        for k, v in result.items():
+            result[k] = torch.nested.nested_tensor(v)
+
+        return result
 
 
 @register_model("yolo")
