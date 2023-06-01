@@ -33,7 +33,7 @@ class COCODataset(BaseDataset):
     def __getitem__(self, i) -> Tuple[Tensor, Dict[str, Tensor], int]:
         result = {}
         image_id = self.image_ids[i]
-        image_info = self.coco.loadImgs(image_id)[0]
+        image_info = self.coco.loadImgs(ids=[image_id])[0]
         annotation_id = self.coco.getAnnIds(imgIds=[image_id])
         annotations = self.coco.loadAnns(annotation_id)
 
