@@ -99,7 +99,7 @@ def coco_yolo():
             loss=Loss(
                 type="yolo_v4_loss",
                 yolo_v4_loss=YOLOv4Loss(
-                    bbox_loss_type="ciou",
+                    bbox_loss_type="smooth_l1",
                 ),
             ),
         ),
@@ -134,7 +134,7 @@ def voc_yolo():
     epochs: int = 200
     image_size: Tuple[int, int, int] = (3, 640, 640)
     batch_size: int = 64
-    num_workers: int = 4
+    num_workers: int = 16
     learning_rate: float = 1e-4
     num_classes: Optional[int] = None
 
@@ -151,7 +151,7 @@ def voc_yolo():
             loss=Loss(
                 type="yolo_v4_loss",
                 yolo_v4_loss=YOLOv4Loss(
-                    bbox_loss_type="ciou",
+                    bbox_loss_type="smooth_l1",
                 ),
             ),
         ),
