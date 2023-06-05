@@ -133,9 +133,9 @@ def coco_yolo():
 def voc_yolo():
     epochs: int = 200
     image_size: Tuple[int, int, int] = (3, 640, 640)
-    batch_size: int = 64
+    batch_size: int = 32
     num_workers: int = 16
-    learning_rate: float = 1e-4
+    learning_rate: float = 5e-4
     num_classes: Optional[int] = None
 
     exp_config = Trainer(

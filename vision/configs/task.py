@@ -45,6 +45,6 @@ class Trainer:
 
     logger: Literal["tensorboard", None] = None  # type: ignore
     log_dir: str = "logs"
-    save_best_model: bool = False
+    save_best_model: bool = True
     save_model: bool = False
     ckpt: Optional[str] = None

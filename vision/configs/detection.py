@@ -15,7 +15,7 @@ class YOLO(ModelConfig):
     head: heads.Head = heads.Head(type="yolo")
 
     iou_threshold: float = 0.5
-    score_threshold: float = 0.3
+    score_threshold: float = 0.4
 
     head.yolo.num_channels = neck.fpn.num_channels
 
