@@ -1,4 +1,3 @@
-import torch
 from torch import Tensor
 from torch import nn
 
@@ -20,8 +19,13 @@ class Unet(nn.Module):
         self.backbone = get_backbone(model_config.backbone)
         self.extra_block = nn.ModuleDict()
 
-        in_channels = get_in_channels(self.backbone, self.extra_block, model_config.head.unet.min_level, model_config.head.unet.max_level)
-                    
+        in_channels = get_in_channels(
+            self.backbone,
+            self.extra_block,
+            model_config.head.unet.min_level,
+            model_config.head.unet.max_level,
+        )
+
         model_config.head.unet.in_channels = in_channels
         model_config.head._num_classes = model_config.num_classes
 

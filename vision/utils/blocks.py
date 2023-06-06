@@ -6,25 +6,33 @@ from torch import nn
 
 class ConvReLUBN(nn.Module):
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: int,
-            stride: int = 1,
-            padding: Union[str, int] = 0,
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: Union[str, int] = 0,
     ):
         super().__init__()
         self.block = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            ),
             nn.ReLU(),
-            nn.BatchNorm2d(out_channels)
+            nn.BatchNorm2d(out_channels),
         )
 
     def forward(self, x):
         return self.block(x)
 
 
-def get_in_channels(backbone: nn.Module, extra_block: nn.ModuleDict, min_level: int, max_level: int):
+def get_in_channels(
+    backbone: nn.Module, extra_block: nn.ModuleDict, min_level: int, max_level: int
+):
     in_channels = {}
 
     with torch.no_grad():

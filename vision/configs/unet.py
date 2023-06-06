@@ -17,7 +17,7 @@ class Unet(ModelConfig):
         unet=heads.Unet(
             min_level=0,
             max_level=4,
-        )
+        ),
     )
 
 
