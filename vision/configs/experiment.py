@@ -56,8 +56,12 @@ def dog_vs_cat_classification_resnet():
         epochs=epochs,
         train_data=Dataset(
             type="classification",
-            image_dir=os.path.join(DATASET_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME),
-            label_path=os.path.join(DATASET_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_TRAIN_LABEL),
+            image_dir=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME
+            ),
+            label_path=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_TRAIN_LABEL
+            ),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -66,8 +70,12 @@ def dog_vs_cat_classification_resnet():
         ),
         val_data=Dataset(
             type="classification",
-            image_dir=os.path.join(DATASET_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME),
-            label_path=os.path.join(DATASET_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_VAL_LABEL),
+            image_dir=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME
+            ),
+            label_path=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_VAL_LABEL
+            ),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
@@ -108,8 +116,8 @@ def coco_yolo():
         epochs=epochs,
         train_data=Dataset(
             type="coco",
-            image_dir=os.path.join(DATASET_DIR, COCO_DIR, COCO_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(DATASET_DIR, COCO_DIR, COCO_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -118,8 +126,8 @@ def coco_yolo():
         ),
         val_data=Dataset(
             type="coco",
-            image_dir=os.path.join(DATASET_DIR, COCO_DIR, COCO_VAL_IMAGE_DIR),
-            label_path=os.path.join(DATASET_DIR, COCO_DIR, COCO_VAL_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_VAL_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_VAL_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
@@ -160,8 +168,8 @@ def voc_yolo():
         epochs=epochs,
         train_data=Dataset(
             type="coco",
-            image_dir=os.path.join(DATASET_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(DATASET_DIR, VOC_DIR, VOC_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -170,8 +178,8 @@ def voc_yolo():
         ),
         val_data=Dataset(
             type="coco",
-            image_dir=os.path.join(DATASET_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(DATASET_DIR, VOC_DIR, VOC_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
