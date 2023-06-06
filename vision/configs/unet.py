@@ -9,7 +9,6 @@ from vision.configs.base_config import ModelConfig
 class Unet(ModelConfig):
     """ResNet config."""
 
-    type: Optional[str] = "unet"
     num_classes: int = 2
     backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")
     neck: necks.Neck = necks.Neck(type="identity")
@@ -20,3 +19,8 @@ class Unet(ModelConfig):
             max_level=4,
         )
     )
+
+
+class Segmentation(ModelConfig):
+    type: Optional[str] = "unet"
+    unet: Unet = Unet()

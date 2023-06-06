@@ -40,17 +40,8 @@ class Unet(nn.Module):
 
 @register_model("unet")
 def unet(model_cfg: ModelConfig):
-    assert isinstance(model_cfg, unet_cfg.Unet)
+    assert isinstance(model_cfg, unet_cfg.Segmentation)
 
-    model = Unet(model_cfg)
+    model = Unet(model_cfg.unet)
 
     return model
-
-
-if __name__ == "__main__":
-    model = Unet(unet_cfg.Unet())
-
-    dummy_input = torch.randn((1, 3, 256, 256))
-    x = model(dummy_input)
-
-    print(x.shape)

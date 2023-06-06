@@ -4,9 +4,7 @@ from absl.testing import parameterized
 import torch
 from torch import Tensor
 
-from vision.configs import backbones
-from vision.configs import classification
-from vision.configs import detection
+from vision.configs import backbones, classification, detection, unet
 from vision.modeling.backbones import get_backbone as get_backbone_model
 from vision.modeling import get_model
 
@@ -75,3 +73,15 @@ class Test(parameterized.TestCase):
             result["labels"].size(2),
             detection_cfg.yolo.head._num_classes + 1,
         )
+
+        # test unet
+        segmentation_cfg = unet.Segmentation()
+        segmentation_cfg.type = "unet"
+
+        segmentation_cfg.unet.backbone = backbone_cfg
+        model = get_model(segmentation_cfg).to(device)
+        input_data = torch.randn((2, 3, 256, 256))
+        result: Tensor = model(input_data)
+
+        self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
+        self.assertEqual(result.size(2), 256)

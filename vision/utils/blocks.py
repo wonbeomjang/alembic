@@ -24,7 +24,7 @@ class ConvReLUBN(nn.Module):
         return self.block(x)
 
 
-def get_in_channels(backbone, extra_block, min_level, max_level):
+def get_in_channels(backbone: nn.Module, extra_block: nn.ModuleDict, min_level: int, max_level: int):
     in_channels = {}
 
     with torch.no_grad():
