@@ -13,6 +13,7 @@ from vision.modeling.backbones import get_backbone
 from vision.modeling.head import get_head
 from vision.modeling.necks import get_neck
 from vision.utils.anchor import AnchorGenerator
+from vision.utils.blocks import get_in_channels
 
 
 class YOLO(nn.Module):
@@ -23,14 +24,14 @@ class YOLO(nn.Module):
     ):
         super().__init__()
         self.backbone = get_backbone(model_config.backbone)
+        self.extra_block = nn.ModuleDict()
 
-        with torch.no_grad():
-            dummy_input = torch.randn((1, 3, 224, 224))
-            output = self.backbone(dummy_input)
-
-        in_channels = {}
-        for k in output.keys():
-            in_channels[k] = output[k].size(1)
+        in_channels = get_in_channels(
+            self.backbone,
+            self.extra_block,
+            model_config.neck.fpn.min_level,
+            model_config.neck.fpn.max_level,
+        )
 
         model_config.neck.fpn.in_channels = in_channels
         model_config.head.yolo._min_level = model_config.neck.fpn.min_level
@@ -56,6 +57,8 @@ class YOLO(nn.Module):
         x = torch.stack(x)
 
         feature = self.backbone(x)
+        for k, block in self.extra_block.items():
+            feature[k] = block(feature[str(int(k) - 1)])
         feature = self.neck(feature)
 
         if self.num_images != x.shape[0]:

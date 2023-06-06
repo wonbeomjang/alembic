@@ -40,7 +40,7 @@ def get_in_channels(
         output = backbone(dummy_input)
         for k in range(min_level, max_level + 1):
             if not str(k) in output.keys():
-                b, c, w, g = output[str(k - 1)].shape
+                c = in_channels[str(k - 1)]
 
                 extra_block[str(k)] = nn.Sequential(
                     nn.MaxPool2d(2, 2),
