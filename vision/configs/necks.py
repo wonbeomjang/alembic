@@ -12,6 +12,12 @@ class FPN:
 
 
 @dataclasses.dataclass
+class Identity:
+    pass
+
+
+@dataclasses.dataclass
 class Neck:
     type: Optional[str] = None
     fpn: FPN = FPN()
+    identity: Identity = Identity()
