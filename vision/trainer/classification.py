@@ -239,6 +239,7 @@ class ClassificationTrainer(BasicTrainer):
                     filename="best",
                     monitor="val_acc",
                     save_last=True,
+                    mode="max",
                 )
             ]
 

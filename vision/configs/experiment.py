@@ -11,18 +11,20 @@ from vision.configs.optimizer import Optimizer, Adam
 from vision.configs.task import Trainer, ClassificationTask, DetectionTask
 
 
-DOG_VS_CAT_BASE_DIR = os.path.join("..", "datasets", "dog_vs_cat")
+DATASET_BASE_DIR = os.path.join("..", "datasets")
+
+DOG_VS_CAT_DIR = "dog_vs_cat"
 DOG_VS_CAT_BASE_TRAIN_LABEL = "train.json"
 DOG_VS_CAT_BASE_VAL_LABEL = "val.json"
 DOG_VS_CAT_BASE_IMAGE_DIR_NAME = "images"
 
-COCO_BASE_DIR = os.path.join("..", "datasets", "coco")
+COCO_DIR = "coco"
 COCO_TRAIN_LABEL = os.path.join("annotations", "instances_train2017.json")
 COCO_TRAIN_IMAGE_DIR = os.path.join("images", "train2017")
 COCO_VAL_LABEL = os.path.join("annotations", "instances_val2017.json")
 COCO_VAL_IMAGE_DIR = os.path.join("images", "val2017")
 
-VOC_BASE_DIR = os.path.join("..", "datasets", "voc")
+VOC_DIR = "voc"
 VOC_TRAIN_LABEL = os.path.join("VOC2012_train_val", "coco_label.json")
 VOC_TRAIN_IMAGE_DIR = os.path.join("VOC2012_train_val", "JPEGImages")
 VOC_VAL_LABEL = os.path.join("VOC2012_test", "coco_label.json")
@@ -54,8 +56,12 @@ def dog_vs_cat_classification_resnet():
         epochs=epochs,
         train_data=Dataset(
             type="classification",
-            image_dir=os.path.join(DOG_VS_CAT_BASE_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME),
-            label_path=os.path.join(DOG_VS_CAT_BASE_DIR, DOG_VS_CAT_BASE_TRAIN_LABEL),
+            image_dir=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME
+            ),
+            label_path=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_TRAIN_LABEL
+            ),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -64,8 +70,12 @@ def dog_vs_cat_classification_resnet():
         ),
         val_data=Dataset(
             type="classification",
-            image_dir=os.path.join(DOG_VS_CAT_BASE_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME),
-            label_path=os.path.join(DOG_VS_CAT_BASE_DIR, DOG_VS_CAT_BASE_VAL_LABEL),
+            image_dir=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_IMAGE_DIR_NAME
+            ),
+            label_path=os.path.join(
+                DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_VAL_LABEL
+            ),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
@@ -83,7 +93,7 @@ def coco_yolo():
     image_size: Tuple[int, int, int] = (3, 640, 640)
     batch_size: int = 64
     num_workers: int = 4
-    learning_rate: float = 1e-4
+    learning_rate: float = 5e-4
     num_classes: Optional[int] = None
 
     exp_config = Trainer(
@@ -99,15 +109,15 @@ def coco_yolo():
             loss=Loss(
                 type="yolo_v4_loss",
                 yolo_v4_loss=YOLOv4Loss(
-                    bbox_loss_type="ciou",
+                    bbox_loss_type="smooth_l1",
                 ),
             ),
         ),
         epochs=epochs,
         train_data=Dataset(
             type="coco",
-            image_dir=os.path.join(COCO_BASE_DIR, COCO_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(COCO_BASE_DIR, COCO_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -116,8 +126,8 @@ def coco_yolo():
         ),
         val_data=Dataset(
             type="coco",
-            image_dir=os.path.join(COCO_BASE_DIR, COCO_VAL_IMAGE_DIR),
-            label_path=os.path.join(COCO_BASE_DIR, COCO_VAL_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_VAL_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, COCO_DIR, COCO_VAL_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
@@ -133,9 +143,9 @@ def coco_yolo():
 def voc_yolo():
     epochs: int = 200
     image_size: Tuple[int, int, int] = (3, 640, 640)
-    batch_size: int = 64
-    num_workers: int = 4
-    learning_rate: float = 1e-4
+    batch_size: int = 32
+    num_workers: int = 16
+    learning_rate: float = 5e-4
     num_classes: Optional[int] = None
 
     exp_config = Trainer(
@@ -151,15 +161,15 @@ def voc_yolo():
             loss=Loss(
                 type="yolo_v4_loss",
                 yolo_v4_loss=YOLOv4Loss(
-                    bbox_loss_type="ciou",
+                    bbox_loss_type="smooth_l1",
                 ),
             ),
         ),
         epochs=epochs,
         train_data=Dataset(
             type="coco",
-            image_dir=os.path.join(VOC_BASE_DIR, VOC_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(VOC_BASE_DIR, VOC_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=True,
@@ -168,8 +178,8 @@ def voc_yolo():
         ),
         val_data=Dataset(
             type="coco",
-            image_dir=os.path.join(VOC_BASE_DIR, VOC_TRAIN_IMAGE_DIR),
-            label_path=os.path.join(VOC_BASE_DIR, VOC_TRAIN_LABEL),
+            image_dir=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR),
+            label_path=os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,
