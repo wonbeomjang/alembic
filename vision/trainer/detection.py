@@ -217,7 +217,7 @@ class DetectionTrainer(BasicTrainer):
                 ModelCheckpoint(
                     dirpath=self.config.log_dir,
                     filename="best",
-                    monitor="val_acc",
+                    monitor="val/loss",
                     save_last=True,
                 )
             ]
