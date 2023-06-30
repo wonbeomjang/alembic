@@ -14,8 +14,8 @@ from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 from torchvision.transforms.functional import to_pil_image, to_tensor
 
-from utils.cam.methods import GradCAMpp, CAM, ReciproCAM
-from utils.cam.uitls import overlay_mask
+from vision.utils.cam.methods import GradCAMpp, CAM, ReciproCAM
+from vision.utils.cam.uitls import overlay_mask
 from vision.configs import task as trainer_config
 from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
@@ -26,6 +26,7 @@ from vision.optimizer import get_optimizer
 from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
 from vision.utils.common import STD, MEAN
+from utils.logger import console_logger
 
 
 class ClassificationTask(lightning.LightningModule):
@@ -243,7 +244,7 @@ class ClassificationTrainer(BasicTrainer):
                 )
             ]
 
-        self.train_loader = get_dataloader(self.config.train_data)
+        self.train_loader: DataLoader = get_dataloader(self.config.train_data)
         step_per_epochs = len(self.train_loader)
 
         if self.config.classification.total_steps is None:
@@ -256,11 +257,20 @@ class ClassificationTrainer(BasicTrainer):
                 self.train_loader.dataset.get_num_classes()
             )
 
+        last_path = os.path.join(config.log_dir, "last.ckpt")
+        if self.config.load_last_weight and os.path.exists(last_path):
+            console_logger.info(f"Load last weight from {last_path}")
+            self.config.ckpt = last_path
+
         self.model = ClassificationTask(self.config.classification)
 
-        last_path = os.path.join(config.log_dir, "last.ckpt")
-        if os.path.exists(last_path):
-            self.config.ckpt = last_path
+        if self.config.initial_weight_path is not None:
+            console_logger.info(
+                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
+            )
+            self.load_partial_state_dict(
+                self.config.initial_weight_path, self.config.initial_weight_type
+            )  # type: ignore
 
         self.trainer = Trainer(
             max_epochs=self.config.epochs,
@@ -270,27 +280,9 @@ class ClassificationTrainer(BasicTrainer):
         )
 
         if self.config.val_data is not None:
-            self.val_loader = get_dataloader(self.config.val_data)
+            self.val_loader: DataLoader = get_dataloader(self.config.val_data)
         else:
             self.val_loader = None
-
-    def train(self):
-        self.trainer.fit(self.model, self.train_loader, ckpt_path=self.config.ckpt)
-
-    def eval(self):
-        self.trainer.test(self.model, self.val_loader, ckpt_path=self.config.ckpt)
-
-    def train_and_eval(self):
-        assert self.val_loader is not None
-        self.trainer.fit(
-            self.model, self.train_loader, self.val_loader, ckpt_path=self.config.ckpt
-        )
-
-    def test(self, test_dataloader: DataLoader):
-        self.trainer.test(self.model, test_dataloader)
-
-    def predict(self, dataloader: DataLoader):
-        self.trainer.predict(self.model, dataloader)
 
 
 @register_trainer("classification")

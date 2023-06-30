@@ -1,10 +1,10 @@
 import dataclasses
+from typing import Optional
 
 try:
-    from typing_extensions import Literal
-    from typing import Optional
+    from typing import Literal
 except ModuleNotFoundError:
-    from typing import Optional, Literal
+    from typing_extensions import Literal
 
 from torch import Tensor
 

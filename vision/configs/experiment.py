@@ -18,6 +18,10 @@ DOG_VS_CAT_BASE_TRAIN_LABEL = "train.json"
 DOG_VS_CAT_BASE_VAL_LABEL = "val.json"
 DOG_VS_CAT_BASE_IMAGE_DIR_NAME = "images"
 
+DAGM_DIR = os.path.join("neuro-t", "cla", "hatbahn")
+DAGM_DIR_LABEL = "cla_image_2_label_4_fine_labeling.json"
+DAGM_DIR_IMAGE_DIR_NAME = "images"
+
 COCO_DIR = "coco"
 COCO_TRAIN_LABEL = os.path.join("annotations", "instances_train2017.json")
 COCO_TRAIN_IMAGE_DIR = os.path.join("images", "train2017")
@@ -76,6 +80,54 @@ def dog_vs_cat_classification_resnet():
             label_path=os.path.join(
                 DATASET_BASE_DIR, DOG_VS_CAT_DIR, DOG_VS_CAT_BASE_VAL_LABEL
             ),
+            image_size=image_size,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            augmentation=Augmentation(aug_list=AugPolicy.val_aug(image_size)),
+        ),
+    )
+
+    return exp_config
+
+
+@register_experiment_config("dagm_classification_resnet")
+def dagm_classification_resnet():
+    epochs: int = 100
+    image_size: Tuple[int, int, int] = (3, 512, 512)
+    batch_size: int = 32
+    num_workers: int = 4
+    learning_rate: float = 1e-4
+
+    exp_config = Trainer(
+        type="classification",
+        logger="tensorboard",
+        classification=ClassificationTask(
+            classification_model=ClassificationModel(),
+            optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
+            lr_scheduler=LRScheduler(
+                type="one_cycle_lr",
+            ),
+            loss=Loss(
+                type="cross_entropy_loss",
+                cross_entropy_loss=CrossEntropyLoss(label_smoothing=0.1),
+            ),
+        ),
+        epochs=epochs,
+        train_data=Dataset(
+            type="neurocle_classification",
+            image_dir=os.path.join(DATASET_BASE_DIR, DAGM_DIR, DAGM_DIR_IMAGE_DIR_NAME),
+            label_path=os.path.join(DATASET_BASE_DIR, DAGM_DIR, DAGM_DIR_LABEL),
+            image_size=image_size,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            augmentation=Augmentation(aug_list=AugPolicy.simple_aug(image_size)),
+        ),
+        val_data=Dataset(
+            type="neurocle_classification",
+            image_dir=os.path.join(DATASET_BASE_DIR, DAGM_DIR, DAGM_DIR_IMAGE_DIR_NAME),
+            label_path=os.path.join(DATASET_BASE_DIR, DAGM_DIR, DAGM_DIR_LABEL),
             image_size=image_size,
             batch_size=batch_size,
             shuffle=False,

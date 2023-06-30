@@ -23,7 +23,6 @@ def imread_utf8(path: str):
 
 class NeurocleClassificationDataset(Dataset):
     def __init__(self, config: dataset_config.Dataset):
-        self.labels = []
         label_set: str = "train" if config.is_train else "test"
 
         with open(config.label_path, encoding="utf-8") as f:
@@ -38,19 +37,22 @@ class NeurocleClassificationDataset(Dataset):
             d: i for i, d in enumerate(self.class_index)
         }
 
-        new_label = []
+        new_label: List[Dict[str, Any]] = []
 
         for d in self.labels:
-            if d["set"] == label_set:
+            if d["set"] == label_set and d["classLabel"]:
                 new_label += [d]
                 label_info[d["classLabel"]] += 1
 
+        self.labels = new_label
         self.image_dir_path = config.image_dir
         self.transforms: A.Compose = parse_augmentation(aug_config=config.augmentation)
 
     def __getitem__(self, i) -> Tuple[Tensor, int]:
         label = self.labels[i]
-        image = imread_utf8(os.path.join(self.image_dir_path, label["fileName"]))
+        image = imread_utf8(
+            os.path.join(self.image_dir_path, label["fileName"].replace(".png", ".BMP"))
+        )
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image = self.transforms(image=image)["image"]
 

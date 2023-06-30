@@ -1,10 +1,10 @@
 import dataclasses
+from typing import Optional
 
 try:
-    from typing_extensions import Literal
-    from typing import Optional
+    from typing import Literal
 except ModuleNotFoundError:
-    from typing import Optional, Literal
+    from typing_extensions import Literal
 
 from vision.configs.classification import ClassificationModel
 from vision.configs.loss import Loss
@@ -46,5 +46,8 @@ class Trainer:
     logger: Literal["tensorboard", None] = None  # type: ignore
     log_dir: str = "logs"
     save_best_model: bool = True
-    save_model: bool = False
+    load_last_weight: bool = False
     ckpt: Optional[str] = None
+
+    initial_weight_path: Optional[str] = None
+    initial_weight_type: Literal["full", "backbone"] = "full"  # type: ignore
