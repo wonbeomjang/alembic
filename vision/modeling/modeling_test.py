@@ -42,8 +42,8 @@ class Test(parameterized.TestCase):
         image_tensor = torch.randn(1, 3, input_size, input_size).to(device)
 
         # test backbone
-        backbone = get_backbone_model(backbone_cfg).to(device)
-        result: Dict[str, Tensor] = backbone(image_tensor)
+        model = get_backbone_model(backbone_cfg).to(device)
+        result: Dict[str, Tensor] = model(image_tensor)
         self.assertEqual(5, len(result.keys()))
         for i in range(5):
             self.assertEqual(input_size // (2 ** (i + 1)), result[str(i)].size(2))
@@ -52,9 +52,20 @@ class Test(parameterized.TestCase):
         classification_cfg = classification.ClassificationModel()
         classification_cfg.backbone = backbone_cfg
 
-        classification_model = get_model(classification_cfg).to(device)
-        result: Tensor = classification_model(torch.randn(1, 3, 256, 256).to(device))
+        model = get_model(classification_cfg).to(device)
+        result: Tensor = model(image_tensor)
         self.assertEqual(result.shape, torch.Size([1, 1000]))
+
+        # test unet
+        segmentation_cfg = unet.Segmentation()
+        segmentation_cfg.type = "unet"
+
+        segmentation_cfg.unet.backbone = backbone_cfg
+        model = get_model(segmentation_cfg).to(device)
+        result: Tensor = model(image_tensor)
+
+        self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
+        self.assertEqual(result.size(2), input_size)
 
         # test yolo
         detection_cfg = detection.DetectionModel(type="yolo", num_classes=80)
@@ -63,8 +74,8 @@ class Test(parameterized.TestCase):
 
         model = get_model(detection_cfg).to(device)
         input_data = (
-            torch.randn(3, 256, 256).to(device),
-            torch.randn(3, 256, 256).to(device),
+            torch.randn(3, input_size, input_size).to(device),
+            torch.randn(3, input_size, input_size).to(device),
         )
         result: Dict[str, Tensor] = model(input_data)
 
@@ -73,15 +84,3 @@ class Test(parameterized.TestCase):
             result["labels"].size(2),
             detection_cfg.yolo.head._num_classes + 1,
         )
-
-        # test unet
-        segmentation_cfg = unet.Segmentation()
-        segmentation_cfg.type = "unet"
-
-        segmentation_cfg.unet.backbone = backbone_cfg
-        model = get_model(segmentation_cfg).to(device)
-        input_data = torch.randn((2, 3, 256, 256))
-        result: Tensor = model(input_data)
-
-        self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
-        self.assertEqual(result.size(2), 256)
