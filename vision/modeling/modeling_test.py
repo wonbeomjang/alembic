@@ -11,6 +11,7 @@ from vision.modeling import get_model
 from vision.modeling.backbones import resnet
 from vision.modeling.backbones import mobilenet
 from vision.modeling.backbones import ghostnet
+from vision.modeling.backbones import repvgg
 
 
 class Test(parameterized.TestCase):
@@ -32,6 +33,13 @@ class Test(parameterized.TestCase):
     def test_alembic_ghostnet(self, model_id):
         backbone_cfg = backbones.Backbone(type="alembic_ghostnet")
         backbone_cfg.alembic_ghostnet.model_id = model_id
+
+        self.base_test(backbone_cfg)
+
+    @parameterized.parameters(*repvgg.support_model)
+    def test_alembic_repvgg(self, model_id):
+        backbone_cfg = backbones.Backbone(type="alembic_repvgg")
+        backbone_cfg.alembic_repvgg.model_id = model_id
 
         self.base_test(backbone_cfg)
 

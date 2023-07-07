@@ -1,4 +1,5 @@
 import abc
+from collections import OrderedDict
 from typing import Union, List
 
 import numpy as np
@@ -7,32 +8,43 @@ from torch import nn
 import torch.nn.functional as F
 
 
+_state_dict_url = {
+    "repvgg_a0": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-A0-train.pth",
+    "repvgg_a1": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-A1-train.pth",
+    "repvgg_a2": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-A2-train.pth",
+    "repvgg_b0": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-B0-train.pth",
+    "repvgg_b1": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-B1-train.pth",
+    "repvgg_b2": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-B2-train.pth",
+    "repvgg_b3": "https://github.com/wonbeomjang/alembic/releases/download/parameter/RepVGG-B3-train.pth",
+}
+
+
 cfg = {
-    "A0": {
+    "repvgg_a0": {
         "num_block": [2, 4, 14, 1],
         "width_multiplier": [0.75, 0.75, 0.75, 2.5],
     },
-    "A1": {
+    "repvgg_a1": {
         "num_block": [2, 4, 14, 1],
         "width_multiplier": [1, 1, 1, 2.5],
     },
-    "A2": {
+    "repvgg_a2": {
         "num_block": [2, 4, 14, 1],
         "width_multiplier": [1.5, 1.5, 1.5, 2.75],
     },
-    "B0": {
+    "repvgg_b0": {
         "num_block": [4, 6, 16, 1],
         "width_multiplier": [1, 1, 1, 2.5],
     },
-    "B1": {
+    "repvgg_b1": {
         "num_block": [4, 6, 16, 1],
         "width_multiplier": [2, 2, 2, 4],
     },
-    "B2": {
+    "repvgg_b2": {
         "num_block": [4, 6, 16, 1],
         "width_multiplier": [2.5, 2.5, 2.5, 5],
     },
-    "B3": {
+    "repvgg_b3": {
         "num_block": [4, 6, 16, 1],
         "width_multiplier": [3, 3, 3, 5],
     },
@@ -95,7 +107,7 @@ def conv_bn(
             padding,
             dilation,
             groups,
-            True,
+            False,
             padding_mode,
         ),
     )
@@ -124,7 +136,7 @@ def _fuse_conv_bn(block: Union[nn.Sequential, nn.BatchNorm2d, None], groups: int
 
     else:
         raise AttributeError(
-            f"block must be one of [nn.Sequential, nn.BatchNorm2d], but get {type(bn)}"
+            f"block must be one of [nn.Sequential, nn.BatchNorm2d], but get {type(block)}"
         )
 
     bn_weight = bn.weight
@@ -165,7 +177,7 @@ class RepVGGBlock(ReparameterizableModel):
                 padding,
                 dilation,
                 groups,
-                True,
+                False,
                 padding_mode,
             )
             if deploy
@@ -228,7 +240,7 @@ class RepVGGBlock(ReparameterizableModel):
             self.rbr_dense.conv.groups,
             True,
             self.rbr_dense.conv.padding_mode,
-        )
+        ).to(self.rbr_dense.conv.weight.device)
 
         self.rbr_reparam.load_state_dict(state_dict)
         delattr(self, "rbr_identity")
@@ -299,21 +311,29 @@ class RepVGG(nn.Module):
         )
 
     def forward(self, x):
-        x = self.stage0(x)
-        x = self.stage1(x)
-        x = self.stage2(x)
-        x = self.stage3(x)
-        x = self.stage4(x)
-        return x
+        result = OrderedDict()
+        result["0"] = self.stage0(x)
+        result["1"] = self.stage1(result["0"])
+        result["2"] = self.stage2(result["1"])
+        result["3"] = self.stage3(result["2"])
+        result["4"] = self.stage4(result["3"])
+        return result
 
     def reparameterize(self):
         for m in self.modules():
             if isinstance(m, ReparameterizableModel):
                 m.reparameterize()
 
+        return self
 
-def rep_vgg(net_type: str):
-    return RepVGG(
+
+def rep_vgg(net_type: str, pretrained: bool = True):
+    model = RepVGG(
         width_multiplier=cfg[net_type]["width_multiplier"],
         num_block=cfg[net_type]["num_block"],
     )
+
+    if pretrained:
+        state_dict = torch.hub.load_state_dict_from_url(_state_dict_url[net_type])
+        model.load_state_dict(state_dict)
+    return model
