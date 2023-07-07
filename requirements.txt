@@ -10,4 +10,4 @@ setuptools~=66.0.0
 torch~=2.0.0
 torchvision~=0.15.1
 pycocotools~=2.0.6
-tqdm~=4.65.0
+tqdm~=4.64.1
