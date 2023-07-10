@@ -27,9 +27,17 @@ class AlembicGhostNet(ModelConfig):
 
 
 @dataclasses.dataclass
+class AlembicRepVGG(ModelConfig):
+    """ResNet config."""
+
+    model_id: str = "repvgg_a0"
+
+
+@dataclasses.dataclass
 class Backbone(ModelConfig):
     type: Optional[str] = None
     pretrained: bool = True
     alembic_resnet: AlembicResNet = AlembicResNet()
     alembic_mobilenet: AlembicMobileNet = AlembicMobileNet()
     alembic_ghostnet: AlembicGhostNet = AlembicGhostNet()
+    alembic_repvgg: AlembicRepVGG = AlembicRepVGG()
