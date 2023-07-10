@@ -60,8 +60,8 @@ class Test(parameterized.TestCase):
         classification_cfg = classification.ClassificationModel()
         classification_cfg.backbone = backbone_cfg
 
-        classification_model = get_model(classification_cfg).to(device)
-        result: Tensor = classification_model(torch.randn(1, 3, 256, 256).to(device))
+        model = get_model(classification_cfg).to(device)
+        result: Tensor = model(image_tensor)
         self.assertEqual(result.shape, torch.Size([1, 1000]))
 
         # test yolo
@@ -88,8 +88,7 @@ class Test(parameterized.TestCase):
 
         segmentation_cfg.unet.backbone = backbone_cfg
         model = get_model(segmentation_cfg).to(device)
-        input_data = torch.randn((2, 3, 256, 256))
-        result: Tensor = model(input_data)
+        result: Tensor = model(image_tensor)
 
         self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
         self.assertEqual(result.size(2), 256)

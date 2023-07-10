@@ -1,4 +1,3 @@
-import abc
 from collections import OrderedDict
 from typing import Union, List
 
@@ -52,7 +51,6 @@ cfg = {
 
 
 class ReparameterizableModel(nn.Module):
-    @abc.abstractmethod
     def reparameterize(self):
         pass
 
