@@ -11,6 +11,7 @@ from vision.modeling import get_model
 from vision.modeling.backbones import resnet
 from vision.modeling.backbones import mobilenet
 from vision.modeling.backbones import ghostnet
+from vision.modeling.backbones import repvgg
 
 
 class Test(parameterized.TestCase):
@@ -35,6 +36,13 @@ class Test(parameterized.TestCase):
 
         self.base_test(backbone_cfg)
 
+    @parameterized.parameters(*repvgg.support_model)
+    def test_alembic_repvgg(self, model_id):
+        backbone_cfg = backbones.Backbone(type="alembic_repvgg")
+        backbone_cfg.alembic_repvgg.model_id = model_id
+
+        self.base_test(backbone_cfg)
+
     def base_test(self, backbone_cfg):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -52,8 +60,8 @@ class Test(parameterized.TestCase):
         classification_cfg = classification.ClassificationModel()
         classification_cfg.backbone = backbone_cfg
 
-        classification_model = get_model(classification_cfg).to(device)
-        result: Tensor = classification_model(torch.randn(1, 3, 256, 256).to(device))
+        model = get_model(classification_cfg).to(device)
+        result: Tensor = model(image_tensor)
         self.assertEqual(result.shape, torch.Size([1, 1000]))
 
         # test yolo
@@ -80,8 +88,7 @@ class Test(parameterized.TestCase):
 
         segmentation_cfg.unet.backbone = backbone_cfg
         model = get_model(segmentation_cfg).to(device)
-        input_data = torch.randn((2, 3, 256, 256))
-        result: Tensor = model(input_data)
+        result: Tensor = model(image_tensor)
 
         self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
         self.assertEqual(result.size(2), 256)

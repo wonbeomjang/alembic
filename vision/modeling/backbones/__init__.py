@@ -5,7 +5,7 @@ from torch import nn
 
 from vision.configs import backbones as backbone_cfg
 from vision.modeling.backbones import impl
-from vision.modeling.backbones import resnet, mobilenet, ghostnet
+from vision.modeling.backbones import resnet, mobilenet, ghostnet, repvgg
 
 
 def get_backbone(backbone_config: backbone_cfg.Backbone, **config: Any) -> nn.Module:
