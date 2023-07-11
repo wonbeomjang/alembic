@@ -4,7 +4,7 @@ from absl.testing import parameterized
 import torch
 from torch import Tensor
 
-from vision.configs import backbones, classification, detection, unet
+from vision.configs import backbones, classification, detection, segmentation
 from vision.modeling.backbones import get_backbone as get_backbone_model
 from vision.modeling import get_model
 
@@ -46,49 +46,48 @@ class Test(parameterized.TestCase):
     def base_test(self, backbone_cfg):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        input_size = 256
-        image_tensor = torch.randn(1, 3, input_size, input_size).to(device)
+        image_size = 256
+        num_classes = 100
+        image_tensor: Tensor = torch.randn(1, 3, image_size, image_size).to(device)
+        detection_input_data = (
+            torch.randn(3, image_size, image_size).to(device),
+            torch.randn(3, image_size, image_size).to(device),
+        )
 
         # test backbone
         backbone = get_backbone_model(backbone_cfg).to(device)
         result: Dict[str, Tensor] = backbone(image_tensor)
         self.assertEqual(5, len(result.keys()))
         for i in range(5):
-            self.assertEqual(input_size // (2 ** (i + 1)), result[str(i)].size(2))
+            self.assertEqual(image_size // (2 ** (i + 1)), result[str(i)].size(2))
 
         # test classification
-        classification_cfg = classification.ClassificationModel()
-        classification_cfg.backbone = backbone_cfg
-
+        classification_cfg = classification.ClassificationModel(
+            backbone=backbone_cfg, num_classes=num_classes
+        )
         model = get_model(classification_cfg).to(device)
+
         result: Tensor = model(image_tensor)
-        self.assertEqual(result.shape, torch.Size([1, 1000]))
+        self.assertEqual(result.shape, torch.Size([1, num_classes]))
 
         # test yolo
-        detection_cfg = detection.DetectionModel(type="yolo", num_classes=80)
+        detection_cfg = detection.DetectionModel(type="yolo", num_classes=num_classes)
         detection_cfg.type = "yolo"
         detection_cfg.yolo.backbone = backbone_cfg
 
         model = get_model(detection_cfg).to(device)
-        input_data = (
-            torch.randn(3, 256, 256).to(device),
-            torch.randn(3, 256, 256).to(device),
-        )
-        result: Dict[str, Tensor] = model(input_data)
+        result: Dict[str, Tensor] = model(detection_input_data)
 
         self.assertEqual(result["boxes"].size(2), 4)
-        self.assertEqual(
-            result["labels"].size(2),
-            detection_cfg.yolo.head._num_classes + 1,
-        )
+        self.assertEqual(result["labels"].size(2), num_classes + 1)
 
         # test unet
-        segmentation_cfg = unet.Segmentation()
-        segmentation_cfg.type = "unet"
-
-        segmentation_cfg.unet.backbone = backbone_cfg
+        segmentation_cfg = segmentation.Segmentation(
+            type="unet",
+            unet=segmentation.Unet(backbone=backbone_cfg, num_classes=num_classes),
+        )
         model = get_model(segmentation_cfg).to(device)
-        result: Tensor = model(image_tensor)
 
+        result: Tensor = model(image_tensor)
         self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
-        self.assertEqual(result.size(2), 256)
+        self.assertEqual(result.size(2), image_size)
