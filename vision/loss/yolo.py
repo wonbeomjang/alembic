@@ -3,9 +3,9 @@ from typing import Dict, Optional, Sequence
 from vision.loss import register_loss
 
 try:
-    from typing_extensions import Literal
-except ModuleNotFoundError:
     from typing import Literal
+except ModuleNotFoundError:
+    from typing_extensions import Literal
 
 import torch
 from torch import Tensor, nn
