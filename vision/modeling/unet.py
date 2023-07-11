@@ -1,7 +1,7 @@
 from torch import Tensor
 from torch import nn
 
-from vision.configs import unet as unet_cfg
+from vision.configs import segmentation as unet_cfg
 from vision.configs.base_config import ModelConfig
 from vision.modeling.backbones import get_backbone
 from vision.modeling import register_model
