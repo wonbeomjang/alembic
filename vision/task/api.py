@@ -3,15 +3,15 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from lightning import LightningModule
 
-from vision.configs.task import Trainer
-from vision.trainer._trainer import BasicTrainer
+from vision.configs.task import Task
+from vision.task.base import BaseTask
 
 M = TypeVar("M", bound=LightningModule)
 
 BUILTIN_MODELS = {}
 
 
-def register_trainer(
+def register_task(
     name: Optional[str] = None,
 ) -> Callable[[Callable[..., M]], Callable[..., M]]:
     def wrapper(fn: Callable[..., M]) -> Callable[..., M]:
@@ -24,7 +24,7 @@ def register_trainer(
     return wrapper
 
 
-def list_trainer(module: Optional[ModuleType] = None) -> List[str]:
+def list_task(module: Optional[ModuleType] = None) -> List[str]:
     """
     Returns a list with the names of registered models.
 
@@ -43,7 +43,7 @@ def list_trainer(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_trainer_builder(name: str) -> Callable[..., BasicTrainer]:
+def get_task_builder(name: str) -> Callable[..., BaseTask]:
     """
     Gets the model name and returns the model builder method.
 
@@ -61,16 +61,16 @@ def get_trainer_builder(name: str) -> Callable[..., BasicTrainer]:
     return fn
 
 
-def get_trainer(trainer_cfg: Trainer, **config: Any) -> BasicTrainer:
+def get_task(task_cfg: Task, **config: Any) -> BaseTask:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        trainer_cfg (ModelConfig): config of the model
+        task_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_trainer_builder(trainer_cfg.type)
-    return fn(trainer_cfg, **config)
+    fn = get_task_builder(task_cfg.type)
+    return fn(task_cfg, **config)

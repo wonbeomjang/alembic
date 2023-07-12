@@ -1,41 +1,47 @@
-import os.path
 import time
 from typing import Any, Union, Tuple, List, Dict
 
-import lightning
 import numpy as np
 import torch
-from lightning import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim, Tensor
-from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 from torchvision.transforms.functional import to_pil_image, to_tensor
 
+from vision.configs.task import Task
+from vision.task.api import register_task
+from vision.task.base import BaseTask
 from vision.utils.cam.methods import GradCAMpp, CAM, ReciproCAM
 from vision.utils.cam.uitls import overlay_mask
-from vision.configs import task as trainer_config
+from vision.configs import task as task_config
 from vision.configs.optimizer import Optimizer
-from vision.dataloader import get_dataloader
 from vision.lr_scheduler import get_lr_scheduler
 from vision.modeling import get_model
 from vision.loss import get_loss
 from vision.optimizer import get_optimizer
-from vision.trainer import register_trainer
-from vision.trainer._trainer import BasicTrainer
 from vision.utils.common import STD, MEAN
 from utils.logger import console_logger
 
 
-class ClassificationTask(lightning.LightningModule):
-    def __init__(self, config: trainer_config.ClassificationTask):
+class ClassificationTask(BaseTask):
+    def __init__(self, config: task_config.ClassificationTask):
         super().__init__()
         self.config = config
 
-        self.model: nn.Module = get_model(config.classification_model)
+        self.model: nn.Module = get_model(config.model)
         self.criterion: nn.Module = get_loss(config.loss)
+
+        self.initialize()
+
+    def initialize(self):
+        if self.config.initial_weight_path is not None:
+            console_logger.info(
+                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
+            )
+            self.load_partial_state_dict(
+                self.config.initial_weight_path, self.config.initial_weight_type
+            )  # type: ignore
 
     def forward(self, x, *args: Any, **kwargs: Any) -> Any:
         return self.model(x, *args, **kwargs)
@@ -67,7 +73,7 @@ class ClassificationTask(lightning.LightningModule):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.classification_model.num_classes,
+            num_classes=self.config.model.num_classes,
         )
         metrics = {"train_acc": acc, "train_loss": loss}
         self.log_dict(metrics)
@@ -104,7 +110,7 @@ class ClassificationTask(lightning.LightningModule):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.classification_model.num_classes,
+            num_classes=self.config.model.num_classes,
         )
         metrics = {
             "val_acc": acc,
@@ -121,7 +127,7 @@ class ClassificationTask(lightning.LightningModule):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.classification_model.num_classes,
+            num_classes=self.config.model.num_classes,
         )
         loss = self.criterion(preds, labels)
 
@@ -225,70 +231,13 @@ class ClassificationTask(lightning.LightningModule):
         return result
 
 
-class ClassificationTrainer(BasicTrainer):
-    def __init__(self, config: trainer_config.Trainer):
-        self.config = config
-        logger = None
-        checkpoint_callback = []
-        if self.config.logger == "tensorboard":
-            logger = TensorBoardLogger(save_dir=self.config.log_dir)
+@register_task("classification")
+def get_classification_task(task: Task, **kwargs):
+    assert task.type == "classification"
 
-        if self.config.save_best_model:
-            checkpoint_callback += [
-                ModelCheckpoint(
-                    dirpath=self.config.log_dir,
-                    filename="best",
-                    monitor="val_acc",
-                    save_last=True,
-                    mode="max",
-                )
-            ]
+    if kwargs["num_classes"] is not None:
+        task.classification.model.num_classes = kwargs["num_classes"]
+    if kwargs["total_steps"] is not None:
+        task.classification.lr_scheduler.total_steps = kwargs["total_steps"]
 
-        self.train_loader: DataLoader = get_dataloader(self.config.train_data)
-        step_per_epochs = len(self.train_loader)
-
-        if self.config.classification.total_steps is None:
-            self.config.classification.total_steps = (
-                step_per_epochs * self.config.epochs
-            )
-
-        if self.config.classification.classification_model.num_classes is None:
-            self.config.classification.classification_model.num_classes = (
-                self.train_loader.dataset.get_num_classes()
-            )
-
-        last_path = os.path.join(config.log_dir, "last.ckpt")
-        if self.config.load_last_weight and os.path.exists(last_path):
-            console_logger.info(f"Load last weight from {last_path}")
-            self.config.ckpt = last_path
-
-        self.model = ClassificationTask(self.config.classification)
-
-        if self.config.initial_weight_path is not None:
-            console_logger.info(
-                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
-            )
-            self.load_partial_state_dict(
-                self.config.initial_weight_path, self.config.initial_weight_type
-            )  # type: ignore
-
-        self.trainer = Trainer(
-            max_epochs=self.config.epochs,
-            logger=logger,
-            callbacks=checkpoint_callback,
-            log_every_n_steps=step_per_epochs,
-        )
-
-        if self.config.val_data is not None:
-            self.val_loader: DataLoader = get_dataloader(self.config.val_data)
-        else:
-            self.val_loader = None
-
-
-@register_trainer("classification")
-def classification_trainer(config: trainer_config.Trainer):
-    assert config.type == "classification"
-
-    trainer = ClassificationTrainer(config)
-
-    return trainer
+    return ClassificationTask(task.classification)

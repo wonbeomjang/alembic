@@ -53,7 +53,10 @@ class YOLO(nn.Module):
 
     def forward(
         self, x: Tuple[Tensor]
-    ) -> Union[Dict[str, Dict[str, Tensor]], Tuple[Tensor, List[Dict[str, Tensor]]]]:
+    ) -> Union[
+        Dict[str, Dict[str, Tensor]],
+        Tuple[Tensor, List[Dict[str, Union[List[Tensor], Tensor]]]],
+    ]:
         x = torch.stack(x)
 
         feature = self.backbone(x)
@@ -68,7 +71,7 @@ class YOLO(nn.Module):
 
         return x
 
-    def bbox_decoder(self, x) -> Dict[str, Tensor]:
+    def bbox_decoder(self, x) -> Dict[str, Union[List[Tensor], Tensor]]:
         pred_bboxes = x["boxes"]
         pred_labels = x["labels"]
         pred_labels = torch.sigmoid(pred_labels)
@@ -97,8 +100,9 @@ class YOLO(nn.Module):
             result["scores"] += [dt_score]
             result["bboxes"] += [dt_bbox]
 
-        for k, v in result.items():
-            result[k] = torch.nested.nested_tensor(v)
+        # todo: make nested tensor when pytorch support
+        # for k, v in result.items():
+        #     result[k] = torch.nested.nested_tensor(v)
 
         return result
 

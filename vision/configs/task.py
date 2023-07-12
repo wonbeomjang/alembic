@@ -10,44 +10,36 @@ from vision.configs.classification import ClassificationModel
 from vision.configs.loss import Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer
-from vision.configs.dataset import Dataset
 from vision.configs.detection import DetectionModel
 
 
 @dataclasses.dataclass
 class ClassificationTask:
-    classification_model: ClassificationModel = ClassificationModel()
+    model: ClassificationModel = ClassificationModel()
+    initial_weight_path: Optional[str] = None
+    initial_weight_type: Literal["full", "backbone"] = "full"  # type: ignore
+
     total_steps: Optional[int] = None
     optimizer: Optimizer = Optimizer(type="adam")
     lr_scheduler: Optional[LRScheduler] = None
-    loss: Loss = Loss(type="cross_entropy_loss")
+    loss: Optional[Loss] = Loss(type="cross_entropy_loss")
     task: Literal["binary", "multiclass", "multilabel"] = "multiclass"  # type: ignore
 
 
 @dataclasses.dataclass
 class DetectionTask:
-    detection_model: DetectionModel = DetectionModel()
+    model: DetectionModel = DetectionModel()
+    initial_weight_path: Optional[str] = None
+    initial_weight_type: Literal["full", "backbone"] = "full"  # type: ignore
+
     total_steps: Optional[int] = None
     optimizer: Optimizer = Optimizer(type="adam")
     lr_scheduler: Optional[LRScheduler] = None
-    loss: Loss = Loss(type="yolo_v4_loss")
+    loss: Optional[Loss] = Loss(type="yolo_v4_loss")
 
 
 @dataclasses.dataclass
-class Trainer:
+class Task:
     type: Optional[str] = None
     classification: ClassificationTask = ClassificationTask()
     detection: DetectionTask = DetectionTask()
-
-    epochs: int = 0
-    train_data: Dataset = Dataset()
-    val_data: Optional[Dataset] = None
-
-    logger: Literal["tensorboard", None] = None  # type: ignore
-    log_dir: str = "logs"
-    save_best_model: bool = True
-    load_last_weight: bool = False
-    ckpt: Optional[str] = None
-
-    initial_weight_path: Optional[str] = None
-    initial_weight_type: Literal["full", "backbone"] = "full"  # type: ignore

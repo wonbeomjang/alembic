@@ -3,8 +3,7 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from torch.utils.data import DataLoader
 
-from vision.configs import dataset
-
+from vision.configs.dataset import Dataset
 
 M = TypeVar("M", bound=DataLoader)
 
@@ -43,7 +42,7 @@ def list_dataloader(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_dataset_builder(name: str) -> Callable[..., DataLoader]:
+def get_dataloader_builder(name: str) -> Callable[..., DataLoader]:
     """
     Gets the model name and returns the model builder method.
 
@@ -61,16 +60,16 @@ def get_dataset_builder(name: str) -> Callable[..., DataLoader]:
     return fn
 
 
-def get_dataloader(dataset_cfg: dataset.Dataset, **config: Any) -> DataLoader:
+def get_dataloader(DataLoader_cfg: Dataset, **config: Any) -> DataLoader:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        dataset_cfg (ModelConfig): config of the model
+        DataLoader_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
     Returns:
-        model (DataLoader): The initialized model.
+        model (BaseDataLoader): The initialized model.
     """
-    fn = get_dataset_builder(dataset_cfg.type)
-    return fn(dataset_cfg, **config)
+    fn = get_dataloader_builder(DataLoader_cfg.type)
+    return fn(DataLoader_cfg, **config)
