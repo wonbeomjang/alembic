@@ -3,7 +3,7 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from lightning import LightningModule
 
-from vision.configs.task import Trainer
+from vision.configs.task import Task
 from vision.trainer._trainer import BasicTrainer
 
 M = TypeVar("M", bound=LightningModule)
@@ -61,7 +61,7 @@ def get_trainer_builder(name: str) -> Callable[..., BasicTrainer]:
     return fn
 
 
-def get_trainer(trainer_cfg: Trainer, **config: Any) -> BasicTrainer:
+def get_trainer(trainer_cfg: Task, **config: Any) -> BasicTrainer:
     """
     Gets the model name and configuration and returns an instantiated model.
 

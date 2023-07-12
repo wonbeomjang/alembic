@@ -12,13 +12,12 @@ from torch import nn, optim, Tensor
 from torch.utils.data import DataLoader
 from torchvision.utils import draw_bounding_boxes
 
-from vision.configs import task as trainer_config
+from vision.configs import task as task_config
 from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
 from vision.lr_scheduler import get_lr_scheduler
 from vision.modeling import get_model
 from vision.loss import get_loss
-from vision.modeling.yolo import YOLO
 from vision.optimizer import get_optimizer
 from vision.trainer import register_trainer
 from vision.trainer._trainer import BasicTrainer
@@ -29,16 +28,27 @@ from utils.logger import console_logger
 
 class DetectionTask(lightning.LightningModule):
     def __init__(
-        self, config: trainer_config.DetectionTask, coco_eval: Optional[COCOEval] = None
+        self, config: task_config.DetectionTask, coco_eval: Optional[COCOEval] = None
     ):
         super().__init__()
         self.config = config
         self.coco_eval = coco_eval
 
-        self.model: YOLO = get_model(config.detection_model)
+        self.model = get_model(config.model)
         self.criterion: nn.Module = get_loss(
             config.loss, box_coder=self.model.box_coder
         )
+
+        self.initialize()
+
+    def initialize(self):
+        if self.config.initial_weight_path is not None:
+            console_logger.info(
+                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
+            )
+            self.load_partial_state_dict(
+                self.config.initial_weight_path, self.config.initial_weight_type
+            )  # type: ignore
 
     def forward(self, x, *args: Any, **kwargs: Any) -> Any:
         return self.model(x, *args, **kwargs)
@@ -205,7 +215,7 @@ class DetectionTask(lightning.LightningModule):
 
 
 class DetectionTrainer(BasicTrainer):
-    def __init__(self, config: trainer_config.Trainer):
+    def __init__(self, config: task_config.Task):
         self.config = config
         logger = None
         coco_eval = None
@@ -235,8 +245,8 @@ class DetectionTrainer(BasicTrainer):
         if self.config.detection.total_steps is None:
             self.config.detection.total_steps = step_per_epochs * self.config.epochs
 
-        if self.config.detection.detection_model.num_classes is None:
-            self.config.detection.detection_model.num_classes = (
+        if self.config.detection.model.num_classes is None:
+            self.config.detection.model.num_classes = (
                 self.train_loader.dataset.get_num_classes() + 1
             )
 
@@ -247,14 +257,6 @@ class DetectionTrainer(BasicTrainer):
 
         self.model = DetectionTask(self.config.detection, coco_eval)
 
-        if self.config.initial_weight_path is not None:
-            console_logger.info(
-                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
-            )
-            self.load_partial_state_dict(
-                self.config.initial_weight_path, self.config.initial_weight_type
-            )  # type: ignore
-
         self.trainer = Trainer(
             max_epochs=self.config.epochs,
             logger=logger,
@@ -264,7 +266,7 @@ class DetectionTrainer(BasicTrainer):
 
 
 @register_trainer("detection")
-def detection_trainer(config: trainer_config.Trainer):
+def detection_trainer(config: task_config.Task):
     assert config.type == "detection"
 
     trainer = DetectionTrainer(config)

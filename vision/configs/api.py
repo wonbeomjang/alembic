@@ -1,10 +1,10 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from vision.configs.task import Trainer
+from vision.configs.task import Task
 
 
-M = TypeVar("M", bound=Trainer)
+M = TypeVar("M", bound=Task)
 
 BUILTIN_EXP_CONFIG = {}
 
@@ -41,7 +41,7 @@ def list_config(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_config_builder(name: str) -> Callable[..., Trainer]:
+def get_config_builder(name: str) -> Callable[..., Task]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,7 +59,7 @@ def get_config_builder(name: str) -> Callable[..., Trainer]:
     return fn
 
 
-def get_config(dataset_type: str, **config: Any) -> Trainer:
+def get_config(dataset_type: str, **config: Any) -> Task:
     """
     Gets the model name and configuration and returns an instantiated model.
 

@@ -8,7 +8,7 @@ from vision.configs.dataset import Dataset, Augmentation, AugPolicy
 from vision.configs.loss import Loss, CrossEntropyLoss, YOLOv4Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer, Adam
-from vision.configs.task import Trainer, ClassificationTask, DetectionTask
+from vision.configs.task import Task, ClassificationTask, DetectionTask
 
 
 DATASET_BASE_DIR = os.path.join("..", "datasets")
@@ -43,11 +43,11 @@ def dog_vs_cat_classification_resnet():
     num_workers: int = 4
     learning_rate: float = 1e-4
 
-    exp_config = Trainer(
+    exp_config = Task(
         type="classification",
         logger="tensorboard",
         classification=ClassificationTask(
-            classification_model=ClassificationModel(),
+            model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             lr_scheduler=LRScheduler(
                 type="one_cycle_lr",
@@ -99,11 +99,11 @@ def dagm_classification_resnet():
     num_workers: int = 4
     learning_rate: float = 1e-4
 
-    exp_config = Trainer(
+    exp_config = Task(
         type="classification",
         logger="tensorboard",
         classification=ClassificationTask(
-            classification_model=ClassificationModel(),
+            model=ClassificationModel(),
             optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
             lr_scheduler=LRScheduler(
                 type="one_cycle_lr",
@@ -148,7 +148,7 @@ def coco_yolo():
     learning_rate: float = 5e-4
     num_classes: Optional[int] = None
 
-    exp_config = Trainer(
+    exp_config = Task(
         type="detection",
         logger="tensorboard",
         detection=DetectionTask(
@@ -200,7 +200,7 @@ def voc_yolo():
     learning_rate: float = 5e-4
     num_classes: Optional[int] = None
 
-    exp_config = Trainer(
+    exp_config = Task(
         type="detection",
         logger="tensorboard",
         detection=DetectionTask(

@@ -2,7 +2,6 @@ import os.path
 import time
 from typing import Any, Union, Tuple, List, Dict
 
-import lightning
 import numpy as np
 import torch
 from lightning import Trainer
@@ -14,9 +13,10 @@ from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 from torchvision.transforms.functional import to_pil_image, to_tensor
 
+from vision.task.base import BaseTask
 from vision.utils.cam.methods import GradCAMpp, CAM, ReciproCAM
 from vision.utils.cam.uitls import overlay_mask
-from vision.configs import task as trainer_config
+from vision.configs import task as task_config
 from vision.configs.optimizer import Optimizer
 from vision.dataloader import get_dataloader
 from vision.lr_scheduler import get_lr_scheduler
@@ -29,13 +29,24 @@ from vision.utils.common import STD, MEAN
 from utils.logger import console_logger
 
 
-class ClassificationTask(lightning.LightningModule):
-    def __init__(self, config: trainer_config.ClassificationTask):
+class ClassificationTask(BaseTask):
+    def __init__(self, config: task_config.ClassificationTask):
         super().__init__()
         self.config = config
 
-        self.model: nn.Module = get_model(config.classification_model)
+        self.model: nn.Module = get_model(config.model)
         self.criterion: nn.Module = get_loss(config.loss)
+
+        self.initialize()
+
+    def initialize(self):
+        if self.config.initial_weight_path is not None:
+            console_logger.info(
+                f"Load {self.config.initial_weight_type} weight from {self.config.initial_weight_path}"
+            )
+            self.load_partial_state_dict(
+                self.config.initial_weight_path, self.config.initial_weight_type
+            )  # type: ignore
 
     def forward(self, x, *args: Any, **kwargs: Any) -> Any:
         return self.model(x, *args, **kwargs)
@@ -226,7 +237,7 @@ class ClassificationTask(lightning.LightningModule):
 
 
 class ClassificationTrainer(BasicTrainer):
-    def __init__(self, config: trainer_config.Trainer):
+    def __init__(self, config: task_config.Task):
         self.config = config
         logger = None
         checkpoint_callback = []
@@ -252,8 +263,8 @@ class ClassificationTrainer(BasicTrainer):
                 step_per_epochs * self.config.epochs
             )
 
-        if self.config.classification.classification_model.num_classes is None:
-            self.config.classification.classification_model.num_classes = (
+        if self.config.classification.model.num_classes is None:
+            self.config.classification.model.num_classes = (
                 self.train_loader.dataset.get_num_classes()
             )
 
@@ -286,7 +297,7 @@ class ClassificationTrainer(BasicTrainer):
 
 
 @register_trainer("classification")
-def classification_trainer(config: trainer_config.Trainer):
+def classification_trainer(config: task_config.Task):
     assert config.type == "classification"
 
     trainer = ClassificationTrainer(config)
