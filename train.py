@@ -1,12 +1,11 @@
-import os.path
 import argparse
 import random
 
 import numpy as np
 import torch
-from vision.configs import get_config
-from vision.trainer import get_trainer
-from vision.configs import experiment
+from vision.configs import get_experiment_config
+from vision.trainer.trainer import BaseTrainer
+import project  # noqa: F401
 
 seed = 2021
 deterministic = True
@@ -18,6 +17,7 @@ torch.cuda.manual_seed_all(seed)
 if deterministic:
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+torch.set_float32_matmul_precision("medium")
 
 
 if __name__ == "__main__":
@@ -30,21 +30,7 @@ if __name__ == "__main__":
 
     args = config.parse_args()
 
-    exp_config = get_config("dagm_classification_resnet")
+    exp_config = get_experiment_config("dog_vs_cat_classification_resnet")
+    trainer = BaseTrainer(exp_config)
 
-    exp_config.initial_weight_path = args.initial_weight_path
-    exp_config.initial_weight_type = args.initial_weight_type
-
-    exp_config.log_dir = args.log_dir
-    label = args.label
-
-    exp_config.train_data.label_path = os.path.join(
-        experiment.DATASET_BASE_DIR, experiment.DAGM_DIR, label
-    )
-
-    exp_config.val_data.label_path = os.path.join(
-        experiment.DATASET_BASE_DIR, experiment.DAGM_DIR, label
-    )
-
-    trainer = get_trainer(exp_config)
     trainer.train_and_eval()

@@ -50,9 +50,7 @@ class NeurocleClassificationDataset(Dataset):
 
     def __getitem__(self, i) -> Tuple[Tensor, int]:
         label = self.labels[i]
-        image = imread_utf8(
-            os.path.join(self.image_dir_path, label["fileName"].replace(".png", ".BMP"))
-        )
+        image = imread_utf8(os.path.join(self.image_dir_path, label["fileName"]))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image = self.transforms(image=image)["image"]
 

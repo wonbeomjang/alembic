@@ -1,10 +1,10 @@
 from types import ModuleType
 from typing import Any, Callable, Optional, List, TypeVar
 
-from vision.configs.task import Task
+from vision.configs.experiment import ExperimentConfig
 
 
-M = TypeVar("M", bound=Task)
+M = TypeVar("M", bound=ExperimentConfig)
 
 BUILTIN_EXP_CONFIG = {}
 
@@ -22,7 +22,7 @@ def register_experiment_config(
     return wrapper
 
 
-def list_config(module: Optional[ModuleType] = None) -> List[str]:
+def list_experiment_config(module: Optional[ModuleType] = None) -> List[str]:
     """
     Returns a list with the names of registered models.
 
@@ -41,7 +41,7 @@ def list_config(module: Optional[ModuleType] = None) -> List[str]:
     return sorted(models)
 
 
-def get_config_builder(name: str) -> Callable[..., Task]:
+def get_experiment_config_builder(name: str) -> Callable[..., ExperimentConfig]:
     """
     Gets the model name and returns the model builder method.
 
@@ -59,7 +59,7 @@ def get_config_builder(name: str) -> Callable[..., Task]:
     return fn
 
 
-def get_config(dataset_type: str, **config: Any) -> Task:
+def get_experiment_config(dataset_type: str, **config: Any) -> ExperimentConfig:
     """
     Gets the model name and configuration and returns an instantiated model.
 
@@ -70,5 +70,5 @@ def get_config(dataset_type: str, **config: Any) -> Task:
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_config_builder(dataset_type)
+    fn = get_experiment_config_builder(dataset_type)
     return fn(**config)

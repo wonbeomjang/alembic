@@ -1,26 +1,20 @@
-import os
 import time
 from typing import Any, Union, Tuple, List, Dict, Optional
 
 import lightning
 import torch
-from lightning import Trainer
-from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import nn, optim, Tensor
-from torch.utils.data import DataLoader
 from torchvision.utils import draw_bounding_boxes
 
 from vision.configs import task as task_config
 from vision.configs.optimizer import Optimizer
-from vision.dataloader import get_dataloader
+from vision.configs.task import Task
 from vision.lr_scheduler import get_lr_scheduler
 from vision.modeling import get_model
 from vision.loss import get_loss
 from vision.optimizer import get_optimizer
-from vision.trainer import register_trainer
-from vision.trainer._trainer import BasicTrainer
+from vision.task.api import register_task
 from vision.utils.coco import COCOEval
 from vision.utils.common import STD, MEAN
 from utils.logger import console_logger
@@ -214,61 +208,13 @@ class DetectionTask(lightning.LightningModule):
         return optimizer
 
 
-class DetectionTrainer(BasicTrainer):
-    def __init__(self, config: task_config.Task):
-        self.config = config
-        logger = None
-        coco_eval = None
-        checkpoint_callback = []
-        if self.config.logger == "tensorboard":
-            logger = TensorBoardLogger(save_dir=self.config.log_dir, name="")
+@register_task("detection")
+def get_classification_task(task: Task, **kwargs):
+    assert task.type == "detection"
 
-        if self.config.save_best_model:
-            checkpoint_callback += [
-                ModelCheckpoint(
-                    dirpath=self.config.log_dir,
-                    filename="best",
-                    monitor="val/loss",
-                    save_last=True,
-                )
-            ]
+    if kwargs["num_classes"] is not None:
+        task.detection.model.num_classes = kwargs["num_classes"]
+    if kwargs["total_steps"] is not None:
+        task.detection.lr_scheduler.total_steps = kwargs["total_steps"]
 
-        self.train_loader: DataLoader = get_dataloader(self.config.train_data)
-        if self.config.val_data is not None:
-            self.val_loader: DataLoader = get_dataloader(self.config.val_data)
-            # coco_eval = COCOEval(self.val_loader.dataset.label_path)
-        else:
-            self.val_loader = None
-
-        step_per_epochs = len(self.train_loader)
-
-        if self.config.detection.total_steps is None:
-            self.config.detection.total_steps = step_per_epochs * self.config.epochs
-
-        if self.config.detection.model.num_classes is None:
-            self.config.detection.model.num_classes = (
-                self.train_loader.dataset.get_num_classes() + 1
-            )
-
-        last_path = os.path.join(config.log_dir, "last.ckpt")
-        if self.config.load_last_weight and os.path.exists(last_path):
-            console_logger.info(f"Load last weight from {last_path}")
-            self.config.ckpt = last_path
-
-        self.model = DetectionTask(self.config.detection, coco_eval)
-
-        self.trainer = Trainer(
-            max_epochs=self.config.epochs,
-            logger=logger,
-            callbacks=checkpoint_callback,
-            log_every_n_steps=step_per_epochs,
-        )
-
-
-@register_trainer("detection")
-def detection_trainer(config: task_config.Task):
-    assert config.type == "detection"
-
-    trainer = DetectionTrainer(config)
-
-    return trainer
+    return DetectionTask(task.detection)
