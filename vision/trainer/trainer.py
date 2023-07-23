@@ -2,8 +2,8 @@ import os
 from typing import Optional
 
 from lightning import Trainer
-from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch import callbacks
+from lightning.pytorch import loggers
 from torch.utils.data import DataLoader
 
 from vision.configs.experiment import ExperimentConfig
@@ -17,25 +17,48 @@ from vision.task.api import get_task
 from vision.task.base import BaseTask
 
 
+def _get_callbacks(config: ExperimentConfig):
+    callback = [
+        callbacks.LearningRateMonitor(logging_interval="epoch"),
+        callbacks.RichProgressBar(),
+        callbacks.Timer(),
+    ]
+
+    if config.save_best_model:
+        callback += [
+            callbacks.ModelCheckpoint(
+                dirpath=config.log_dir,
+                filename="best",
+                monitor="val_acc",
+                save_last=True,
+                mode="max",
+            )
+        ]
+    return callback
+
+
+def _get_loggers(config: ExperimentConfig):
+    logger = [loggers.CSVLogger(save_dir=config.log_dir, name=config.run_name)]
+
+    if config.logger == "tensorboard":
+        logger += [
+            loggers.TensorBoardLogger(save_dir=config.log_dir, name=config.run_name)
+        ]
+    try:
+        logger += [
+            loggers.WandbLogger(save_dir=config.log_dir, project=config.run_name)
+        ]
+    except ModuleNotFoundError:
+        pass
+
+    return logger
+
+
 class BaseTrainer:
     def __init__(self, config: ExperimentConfig):
         self.ckpt = None
-        logger = None
-
-        checkpoint_callback = []
-        if config.logger == "tensorboard":
-            logger = TensorBoardLogger(save_dir=config.log_dir)
-
-        if config.save_best_model:
-            checkpoint_callback += [
-                ModelCheckpoint(
-                    dirpath=config.log_dir,
-                    filename="best",
-                    monitor="val_acc",
-                    save_last=True,
-                    mode="max",
-                )
-            ]
+        callback = _get_callbacks(config)
+        logger = _get_loggers(config)
 
         self.train_loader: DataLoader = get_dataloader(config.train_data)
         self.val_loader: Optional[DataLoader] = (
@@ -55,7 +78,7 @@ class BaseTrainer:
         self.trainer = Trainer(
             max_epochs=config.epochs,
             logger=logger,
-            callbacks=checkpoint_callback,
+            callbacks=callback,
             log_every_n_steps=step_per_epochs,
         )
 
