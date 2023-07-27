@@ -13,7 +13,7 @@ from vision.modeling.backbones import get_backbone
 from vision.modeling.head import get_head
 from vision.modeling.necks import get_neck
 from vision.utils.anchor import AnchorGenerator
-from vision.utils.blocks import get_in_channels
+from vision.utils.blocks import get_in_channels, parse_in_channels
 
 
 class YOLO(nn.Module):
@@ -24,21 +24,18 @@ class YOLO(nn.Module):
     ):
         super().__init__()
         self.backbone = get_backbone(model_config.backbone)
-        self.extra_block = nn.ModuleDict()
 
-        in_channels = get_in_channels(
-            self.backbone,
-            self.extra_block,
-            model_config.neck.fpn.min_level,
-            model_config.neck.fpn.max_level,
+        in_channels = get_in_channels(self.backbone)
+        in_channels = parse_in_channels(
+            in_channels, model_config.neck.fpn.pyramid_levels
         )
 
-        model_config.neck.fpn.in_channels = in_channels
-        model_config.head.yolo._min_level = model_config.neck.fpn.min_level
-        model_config.head.yolo._max_level = model_config.neck.fpn.max_level
-
-        self.neck = get_neck(model_config.neck)
-        self.head = get_head(model_config.head)
+        self.neck = get_neck(
+            model_config.neck, in_channels_list=list(in_channels.values())
+        )
+        self.head = get_head(
+            model_config.head, in_channels=model_config.neck.fpn.num_channels
+        )
 
         if anchor_generator is None:
             anchor_generator = AnchorGenerator()
@@ -60,8 +57,6 @@ class YOLO(nn.Module):
         x = torch.stack(x)
 
         feature = self.backbone(x)
-        for k, block in self.extra_block.items():
-            feature[k] = block(feature[str(int(k) - 1)])
         feature = self.neck(feature)
 
         if self.num_images != x.shape[0]:
@@ -108,14 +103,10 @@ class YOLO(nn.Module):
 
 
 @register_model("yolo")
-def yolo(model_cfg: ModelConfig):
+def yolo(model_cfg: ModelConfig, **kwargs):
     assert isinstance(model_cfg, yolo_cfg.DetectionModel)
-    if model_cfg.yolo.head.yolo._min_level != model_cfg.yolo.neck.fpn.min_level:
-        model_cfg.yolo.head.yolo._min_level = model_cfg.yolo.neck.fpn.min_level
-    if model_cfg.yolo.head.yolo._max_level != model_cfg.yolo.neck.fpn.max_level:
-        model_cfg.yolo.head.yolo._max_level = model_cfg.yolo.neck.fpn.max_level
-    if model_cfg.yolo.head._num_classes != model_cfg.num_classes:
-        model_cfg.yolo.head._num_classes = model_cfg.num_classes
+    if "num_classes" in kwargs:
+        model_cfg.yolo.head.num_classes = kwargs["num_classes"]
 
     model = YOLO(model_cfg.yolo)
 

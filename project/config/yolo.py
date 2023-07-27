@@ -111,7 +111,6 @@ def base_yolo_config(
             detection=DetectionTask(
                 model=DetectionModel(
                     type="yolo",
-                    num_classes=num_classes,
                 ),
                 optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
                 lr_scheduler=LRScheduler(type="one_cycle_lr"),

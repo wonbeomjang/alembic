@@ -1,4 +1,3 @@
-import torch
 from torch import Tensor
 from torch import nn
 
@@ -6,6 +5,8 @@ from vision.configs import classification as classification_cfg
 from vision.configs.base_config import ModelConfig
 from vision.modeling.backbones import get_backbone
 from vision.modeling import register_model
+from vision.modeling.head import get_head
+from vision.utils.blocks import get_in_channels
 
 
 class ClassificationModel(nn.Module):
@@ -16,27 +17,18 @@ class ClassificationModel(nn.Module):
         super().__init__()
         self.backbone = get_backbone(model_config.backbone)
 
-        with torch.no_grad():
-            dummy_input = torch.randn((1, 3, 256, 256))
-            output = self.backbone(dummy_input)
-            self.max_key = max(output.keys())
-            _, channels, _, _ = output[self.max_key].shape
-
-        self.header = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Linear(channels, model_config.num_classes),
-        )
+        channels = get_in_channels(self.backbone)
+        self.head = get_head(model_config.head, channels[max(channels.keys())])
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.backbone(x)[self.max_key]
-        x = self.header(x)
+        x = self.backbone(x)
+        x = self.head(x)
 
         return x
 
 
 @register_model("classification")
-def classification(model_cfg: ModelConfig):
+def classification(model_cfg: ModelConfig, **kwargs):
     assert isinstance(model_cfg, classification_cfg.ClassificationModel)
 
     model = ClassificationModel(model_cfg)

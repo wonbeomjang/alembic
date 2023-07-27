@@ -62,16 +62,17 @@ class Test(parameterized.TestCase):
             self.assertEqual(image_size // (2 ** (i + 1)), result[str(i)].size(2))
 
         # test classification
-        classification_cfg = classification.ClassificationModel(
-            backbone=backbone_cfg, num_classes=num_classes
-        )
+        classification_cfg = classification.ClassificationModel(backbone=backbone_cfg)
+        classification_cfg.head.num_classes = num_classes
+
         model = get_model(classification_cfg).to(device)
 
         result: Tensor = model(image_tensor)
         self.assertEqual(result.shape, torch.Size([1, num_classes]))
 
         # test yolo
-        detection_cfg = detection.DetectionModel(type="yolo", num_classes=num_classes)
+        detection_cfg = detection.DetectionModel(type="yolo")
+        detection_cfg.yolo.head.num_classes = num_classes
         detection_cfg.type = "yolo"
         detection_cfg.yolo.backbone = backbone_cfg
 
@@ -84,10 +85,11 @@ class Test(parameterized.TestCase):
         # test unet
         segmentation_cfg = segmentation.Segmentation(
             type="unet",
-            unet=segmentation.Unet(backbone=backbone_cfg, num_classes=num_classes),
+            unet=segmentation.Unet(backbone=backbone_cfg),
         )
+        segmentation_cfg.unet.head.num_classes = num_classes
         model = get_model(segmentation_cfg).to(device)
 
         result: Tensor = model(image_tensor)
-        self.assertEqual(result.size(1), segmentation_cfg.unet.num_classes)
+        self.assertEqual(result.size(1), segmentation_cfg.unet.head.num_classes)
         self.assertEqual(result.size(2), image_size)

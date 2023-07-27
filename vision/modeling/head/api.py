@@ -1,5 +1,5 @@
 from types import ModuleType
-from typing import Any, Callable, Optional, List, TypeVar
+from typing import Any, Callable, Optional, List, TypeVar, Union, Dict
 
 from torch import nn
 
@@ -59,11 +59,14 @@ def get_head_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_head(model_cfg, **config: Any) -> nn.Module:
+def get_head(
+    model_cfg, in_channels: Union[int, List[int], Dict[str, int]], **config: Any
+) -> nn.Module:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
+        in_channels:
         model_cfg (ModelConfig): config of the model
         **config (Any): parameters passed to the model builder method.
 
@@ -71,4 +74,4 @@ def get_head(model_cfg, **config: Any) -> nn.Module:
         model (nn.Module): The initialized model.
     """
     fn = get_head_builder(model_cfg.type)
-    return fn(model_cfg, **config)
+    return fn(model_cfg, in_channels, **config)

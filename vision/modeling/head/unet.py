@@ -9,64 +9,77 @@ from vision.modeling.head import register_head
 
 
 class Unet(nn.Module):
-    def __init__(self, config: head_config.Head):
+    def __init__(self, config: head_config.Head, in_channels):
         super().__init__()
         self.config = config
         self.blocks = nn.ModuleDict()
         self.upsample = nn.Upsample(scale_factor=2)
-        for pyramid_level in range(
-            config.unet.max_level - 1, config.unet.min_level - 1, -1
-        ):
-            self.blocks[str(pyramid_level)] = nn.Sequential(
+        self.pyramid_levels = config.unet.pyramid_levels
+
+        for i in range(len(self.pyramid_levels) - 1):
+            self.blocks[self.pyramid_levels[i]] = nn.Sequential(
                 ConvReLUBN(
-                    config.unet.in_channels[str(pyramid_level)]
-                    + config.unet.in_channels[str(pyramid_level + 1)],
-                    config.unet.in_channels[str(pyramid_level)],
+                    in_channels[self.pyramid_levels[i]]
+                    + in_channels[self.pyramid_levels[i + 1]],
+                    in_channels[self.pyramid_levels[i]],
                     3,
                     1,
                     1,
                 ),
                 ConvReLUBN(
-                    config.unet.in_channels[str(pyramid_level)],
-                    config.unet.in_channels[str(pyramid_level)],
+                    in_channels[self.pyramid_levels[i]],
+                    in_channels[self.pyramid_levels[i]],
                     3,
                     1,
                     1,
                 ),
             )
 
-        pyramid_level = config.unet.min_level
-        self.classifier = nn.Sequential(
-            nn.Upsample(scale_factor=2),
+        self.blocks[self.pyramid_levels[-1]] = nn.Sequential(
             ConvReLUBN(
-                config.unet.in_channels[str(pyramid_level)],
-                config.unet.in_channels[str(pyramid_level)],
+                in_channels[self.pyramid_levels[-1]],
+                in_channels[self.pyramid_levels[-1]],
                 3,
                 1,
                 1,
             ),
-            nn.Conv2d(
-                config.unet.in_channels[str(pyramid_level)], config._num_classes, 1, 1
+            ConvReLUBN(
+                in_channels[self.pyramid_levels[-1]],
+                in_channels[self.pyramid_levels[-1]],
+                3,
+                1,
+                1,
             ),
         )
 
+        self.classifier = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            ConvReLUBN(
+                in_channels[self.pyramid_levels[0]],
+                in_channels[self.pyramid_levels[0]],
+                3,
+                1,
+                1,
+            ),
+            nn.Conv2d(in_channels[self.pyramid_levels[0]], config.num_classes, 1, 1),
+        )
+
     def forward(self, x: Dict[str, Tensor]):
-        for pyramid_level in range(
-            self.config.unet.max_level - 1, self.config.unet.min_level - 1, -1
-        ):
-            x[str(pyramid_level + 1)] = self.upsample(x[str(pyramid_level + 1)])
-            x[str(pyramid_level)] = torch.cat(
-                (x[str(pyramid_level + 1)], x[str(pyramid_level)]), dim=1
+        for i in range(len(self.pyramid_levels) - 2, -1, -1):
+            x[self.pyramid_levels[i + 1]] = self.upsample(x[self.pyramid_levels[i + 1]])
+            x[self.pyramid_levels[i]] = torch.cat(
+                (x[self.pyramid_levels[i]], x[self.pyramid_levels[i + 1]]), dim=1
             )
-            x[str(pyramid_level)] = self.blocks[str(pyramid_level)](
-                x[str(pyramid_level)]
+            x[self.pyramid_levels[i]] = self.blocks[self.pyramid_levels[i]](
+                x[self.pyramid_levels[i]]
             )
-        output = self.classifier(x[str(self.config.unet.min_level)])
+
+        output = self.classifier(x[self.pyramid_levels[0]])
         return output
 
 
 @register_head("unet")
-def get_unet(config: head_config.Head):
+def get_unet(config: head_config.Head, in_channels):
     assert config.type == "unet"
 
-    return Unet(config)
+    return Unet(config, in_channels)

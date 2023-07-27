@@ -1,48 +1,50 @@
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, List, Optional, Callable
 
 from torch import nn, Tensor
+from torchvision.ops import FeaturePyramidNetwork
+from torchvision.ops.feature_pyramid_network import (
+    ExtraFPNBlock,
+    LastLevelMaxPool,
+    LastLevelP6P7,
+)
 
 from vision.configs import necks as neck_config
 from vision.modeling.necks import register_neck
 
 
-class FPN(nn.Module):
-    def __init__(self, config: neck_config.Neck):
-        super().__init__()
-        self.config = config
-        self.blocks = nn.ModuleDict()
-        self.upsample = nn.Upsample(scale_factor=2)
-        for pyramid_level in range(config.fpn.max_level, config.fpn.min_level - 1, -1):
-            self.blocks[str(pyramid_level)] = nn.Conv2d(
-                config.fpn.in_channels[str(pyramid_level)],
-                config.fpn.num_channels,
-                3,
-                1,
-                1,
-            )
+class FPN(FeaturePyramidNetwork):
+    def __init__(
+        self,
+        in_channels_list: List[int],
+        pyramid_levels: List[str],
+        out_channels: int = 256,
+        extra_blocks: Optional[ExtraFPNBlock] = None,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+    ):
+        super().__init__(in_channels_list, out_channels, extra_blocks, norm_layer)
+        self.pyramid_levels = pyramid_levels
 
-    def forward(self, x: Dict[str, Tensor]):
-        output = OrderedDict()
-
-        for pyramid_level in range(
-            self.config.fpn.min_level, self.config.fpn.max_level + 1
-        ):
-            output[str(pyramid_level)] = self.blocks[str(pyramid_level)](
-                x[str(pyramid_level)]
-            )
-
-        for pyramid_level in range(
-            self.config.fpn.max_level - 1, self.config.fpn.min_level - 1, -1
-        ):
-            up_sampled = self.upsample(output[str(pyramid_level + 1)])
-            output[str(pyramid_level)] = up_sampled + output[str(pyramid_level)]
-
-        return output
+    def forward(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:
+        res = OrderedDict()
+        for i in self.pyramid_levels:
+            res[str(i)] = x[str(i)]
+        res = super().forward(res)
+        return res
 
 
 @register_neck("fpn")
-def get_fpn(config: neck_config.Neck):
+def get_fpn(config: neck_config.Neck, in_channels_list: Optional[List[int]]):
     assert config.type == "fpn"
 
-    return FPN(config)
+    if config.fpn.extra_blocks:
+        extra_blocks = LastLevelMaxPool()
+    else:
+        extra_blocks = LastLevelP6P7(in_channels_list[-1], config.fpn.num_channels)
+
+    return FPN(
+        in_channels_list,
+        config.fpn.pyramid_levels,
+        config.fpn.num_channels,
+        extra_blocks=extra_blocks,
+    )
