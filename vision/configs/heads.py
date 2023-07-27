@@ -1,14 +1,15 @@
 import dataclasses
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, List
+
+
+@dataclasses.dataclass
+class Classification:
+    pass
 
 
 @dataclasses.dataclass
 class YOLO:
     num_blocks: int = 3
-    num_channels: Optional[int] = None
-
-    _min_level: Optional[int] = None
-    _max_level: Optional[int] = None
 
     ratios: Tuple[float, float, float] = (0.5, 1.0, 1.5)
     scales: Tuple[float, float, float] = (
@@ -20,15 +21,14 @@ class YOLO:
 
 @dataclasses.dataclass
 class Unet:
-    in_channels: Optional[Dict[str, int]] = None
-
-    min_level: int = 0
-    max_level: int = 4
+    pyramid_levels: List[str] = dataclasses.field(
+        default_factory=lambda: ["0", "1", "2", "3", "4"]
+    )
 
 
 @dataclasses.dataclass
 class Head:
     type: Optional[str] = None
-    _num_classes: Optional[int] = None
+    num_classes: Optional[int] = None
     yolo: YOLO = YOLO()
     unet: Unet = Unet()

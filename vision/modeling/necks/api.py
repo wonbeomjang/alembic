@@ -3,6 +3,8 @@ from typing import Any, Callable, Optional, List, TypeVar
 
 from torch import nn
 
+from vision.configs import necks as neck_config
+
 
 M = TypeVar("M", bound=nn.Module)
 
@@ -59,16 +61,21 @@ def get_neck_builder(name: str) -> Callable[..., nn.Module]:
     return fn
 
 
-def get_neck(model_cfg, **config: Any) -> nn.Module:
+def get_neck(
+    config: neck_config.Neck,
+    in_channels_list: Optional[List[int]] = None,
+    **kwargs: Any,
+) -> nn.Module:
     """
     Gets the model name and configuration and returns an instantiated model.
 
     Args:
-        model_cfg (ModelConfig): config of the model
-        **config (Any): parameters passed to the model builder method.
+        config (ModelConfig): config of the model
+        in_channels_list:
+        **kwargs (Any): parameters passed to the model builder method.
 
     Returns:
         model (nn.Module): The initialized model.
     """
-    fn = get_neck_builder(model_cfg.type)
-    return fn(model_cfg, **config)
+    fn = get_neck_builder(config.type)
+    return fn(config, in_channels_list, **kwargs)

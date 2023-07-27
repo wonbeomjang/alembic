@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 
 @dataclasses.dataclass
@@ -7,8 +7,11 @@ class FPN:
     in_channels: Optional[Dict[str, int]] = None
     num_channels: int = 256
 
-    min_level: int = 2
-    max_level: int = 4
+    pyramid_levels: List[str] = dataclasses.field(
+        default_factory=lambda: ["2", "3", "4"]
+    )
+
+    extra_blocks: bool = False
 
 
 @dataclasses.dataclass

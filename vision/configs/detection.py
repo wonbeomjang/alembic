@@ -23,6 +23,5 @@ class YOLO(ModelConfig):
 @dataclasses.dataclass
 class DetectionModel(ModelConfig):
     type: Optional[str] = None
-    num_classes: Optional[int] = None
 
     yolo: YOLO = YOLO()

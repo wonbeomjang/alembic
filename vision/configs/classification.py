@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Optional
 
-from vision.configs import backbones
+from vision.configs import backbones, heads
 from vision.configs.base_config import ModelConfig
 
 
@@ -10,5 +10,6 @@ class ClassificationModel(ModelConfig):
     """ResNet config."""
 
     type: Optional[str] = "classification"
-    num_classes: Optional[int] = None
+
     backbone: backbones.Backbone = backbones.Backbone(type="alembic_resnet")
+    head: heads.Head = heads.Head(type="classification")

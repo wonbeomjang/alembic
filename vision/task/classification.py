@@ -73,7 +73,7 @@ class ClassificationTask(BaseTask):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.model.num_classes,
+            num_classes=self.config.model.head.num_classes,
         )
         metrics = {"train_acc": acc, "train_loss": loss}
         self.log_dict(metrics)
@@ -110,7 +110,7 @@ class ClassificationTask(BaseTask):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.model.num_classes,
+            num_classes=self.config.model.head.num_classes,
         )
         metrics = {
             "val_acc": acc,
@@ -127,7 +127,7 @@ class ClassificationTask(BaseTask):
             preds,
             labels,
             self.config.task,
-            num_classes=self.config.model.num_classes,
+            num_classes=self.config.model.head.num_classes,
         )
         loss = self.criterion(preds, labels)
 
@@ -173,7 +173,7 @@ class ClassificationTask(BaseTask):
         numpy_image = np.transpose(numpy_image, [1, 2, 0])
 
         with CAM(
-            self, target_layer="model.backbone", fc_layer="model.header.2"
+            self, target_layer="model.backbone", fc_layer="model.head.head"
         ) as cam_extractor:
             out = self(torch.unsqueeze(image, dim=0))
             activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
@@ -236,7 +236,7 @@ def get_classification_task(task: Task, **kwargs):
     assert task.type == "classification"
 
     if kwargs["num_classes"] is not None:
-        task.classification.model.num_classes = kwargs["num_classes"]
+        task.classification.model.head.num_classes = kwargs["num_classes"]
     if kwargs["total_steps"] is not None:
         task.classification.lr_scheduler.total_steps = kwargs["total_steps"]
 

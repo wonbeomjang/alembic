@@ -22,13 +22,16 @@ from utils.logger import console_logger
 
 class DetectionTask(lightning.LightningModule):
     def __init__(
-        self, config: task_config.DetectionTask, coco_eval: Optional[COCOEval] = None
+        self,
+        config: task_config.DetectionTask,
+        coco_eval: Optional[COCOEval] = None,
+        **kwargs,
     ):
         super().__init__()
         self.config = config
         self.coco_eval = coco_eval
 
-        self.model = get_model(config.model)
+        self.model = get_model(config.model, **kwargs)
         self.criterion: nn.Module = get_loss(
             config.loss, box_coder=self.model.box_coder
         )
@@ -211,10 +214,7 @@ class DetectionTask(lightning.LightningModule):
 @register_task("detection")
 def get_classification_task(task: Task, **kwargs):
     assert task.type == "detection"
-
-    if kwargs["num_classes"] is not None:
-        task.detection.model.num_classes = kwargs["num_classes"]
     if kwargs["total_steps"] is not None:
         task.detection.lr_scheduler.total_steps = kwargs["total_steps"]
 
-    return DetectionTask(task.detection)
+    return DetectionTask(task.detection, **kwargs)
