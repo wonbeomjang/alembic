@@ -235,9 +235,9 @@ class ClassificationTask(BaseTask):
 def get_classification_task(task: Task, **kwargs):
     assert task.type == "classification"
 
-    if kwargs["num_classes"] is not None:
+    if "num_classes" in kwargs.keys():
         task.classification.model.head.num_classes = kwargs["num_classes"]
-    if kwargs["total_steps"] is not None:
+    if "total_steps" in kwargs.keys() and task.classification.lr_scheduler is not None:
         task.classification.lr_scheduler.total_steps = kwargs["total_steps"]
 
     return ClassificationTask(task.classification)
