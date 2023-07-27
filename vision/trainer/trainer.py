@@ -22,6 +22,7 @@ def _get_callbacks(config: ExperimentConfig):
         callbacks.LearningRateMonitor(logging_interval="epoch"),
         callbacks.RichProgressBar(),
         callbacks.Timer(),
+        callbacks.EarlyStopping("val_loss", mode="min", patience=50),
     ]
 
     if config.save_best_model:
@@ -66,14 +67,7 @@ class BaseTrainer:
         )
         step_per_epochs = len(self.train_loader)
 
-        if config.auto_num_classes:
-            self.task: BaseTask = get_task(
-                config.task,
-                num_classes=self.train_loader.dataset.get_num_classes(),
-                total_steps=step_per_epochs * config.epochs,
-            )
-        else:
-            self.task: BaseTask = get_task(config.task)
+        self.task: BaseTask = get_task(config.task)
 
         self.trainer = Trainer(
             max_epochs=config.epochs,
