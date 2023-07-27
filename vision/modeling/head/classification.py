@@ -9,12 +9,12 @@ from vision.modeling.head import register_head
 class ClassificationHead(nn.Module):
     def __init__(self, config: head_config.Head, in_channels: int):
         super().__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d((7, 7))
+        self.avg_pool = nn.AdaptiveAvgPool2d((8, 8))
         self.flatten = nn.Flatten()
-        self.head = nn.Linear(in_channels * 7 * 7, config.num_classes)
+        self.head = nn.Linear(in_channels * 8 * 8, config.num_classes)
 
     def forward(self, x: Dict[str, Tensor]):
-        x = self.avg_pool(x[max(x.keys())])
+        x = self.avg_pool(x.popitem()[-1])
         x = self.flatten(x)
         x = self.head(x)
         return x
