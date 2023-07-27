@@ -59,7 +59,7 @@ class NeurocleClassificationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.labels)
 
-    def num_classes(self) -> int:
+    def get_num_classes(self) -> int:
         return len(self.class_index)
 
 
