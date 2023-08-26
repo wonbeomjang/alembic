@@ -1,10 +1,11 @@
 import os
-from typing import Optional, Tuple
+from typing import Tuple
 
 from vision.configs import register_experiment_config
 from vision.configs.dataset import Dataset, Augmentation, AugPolicy
-from vision.configs.detection import DetectionModel
+from vision.configs.detection import DetectionModel, YOLO
 from vision.configs.experiment import ExperimentConfig
+from vision.configs.heads import Head
 from vision.configs.loss import Loss, YOLOv4Loss
 from vision.configs.lr_scheduler import LRScheduler
 from vision.configs.optimizer import Optimizer, Adam
@@ -33,7 +34,7 @@ def coco_yolo():
     batch_size: int = 32
     num_workers: int = 4
     learning_rate: float = 5e-4
-    num_classes: Optional[int] = None
+    num_classes: int = 92
     log_dir: str = os.path.join(".", "logs")
 
     train_image_dir: str = os.path.join(
@@ -67,7 +68,7 @@ def voc_yolo():
     batch_size: int = 32
     num_workers: int = 4
     learning_rate: float = 5e-4
-    num_classes: Optional[int] = None
+    num_classes: int = 21
     log_dir: str = os.path.join(".", "logs")
 
     train_image_dir: str = os.path.join(DATASET_BASE_DIR, VOC_DIR, VOC_TRAIN_IMAGE_DIR)
@@ -111,6 +112,7 @@ def base_yolo_config(
             detection=DetectionTask(
                 model=DetectionModel(
                     type="yolo",
+                    yolo=YOLO(head=Head(type="yolo", num_classes=num_classes)),
                 ),
                 optimizer=Optimizer(type="adam", lr=learning_rate, adam=Adam()),
                 lr_scheduler=LRScheduler(type="one_cycle_lr"),

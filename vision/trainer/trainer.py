@@ -39,7 +39,7 @@ def _get_callbacks(config: ExperimentConfig):
 
 
 def _get_loggers(config: ExperimentConfig):
-    logger = [loggers.CSVLogger(save_dir=config.log_dir, name=config.run_name)]
+    logger = []
 
     if config.logger == "tensorboard":
         logger += [
@@ -67,13 +67,16 @@ class BaseTrainer:
         )
         step_per_epochs = len(self.train_loader)
 
-        self.task: BaseTask = get_task(config.task)
+        self.task: BaseTask = get_task(
+            config.task, total_steps=step_per_epochs * config.epochs
+        )
 
         self.trainer = Trainer(
             max_epochs=config.epochs,
             logger=logger,
             callbacks=callback,
             log_every_n_steps=step_per_epochs,
+            devices=-1,
         )
 
         # resume training

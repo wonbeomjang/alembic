@@ -212,9 +212,9 @@ class DetectionTask(lightning.LightningModule):
 
 
 @register_task("detection")
-def get_classification_task(task: Task, **kwargs):
+def get_detection_task(task: Task, **kwargs):
     assert task.type == "detection"
-    if kwargs["total_steps"] is not None:
+    if "total_steps" in kwargs:
         task.detection.lr_scheduler.total_steps = kwargs["total_steps"]
 
     return DetectionTask(task.detection, **kwargs)

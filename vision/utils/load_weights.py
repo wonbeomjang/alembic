@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from typing import Dict
 
-from safetensors import torch
+import torch
 from torch import Tensor, nn
 
 try:
